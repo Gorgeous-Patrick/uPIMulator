@@ -6,6 +6,7 @@ BL ?= 10
 NR_DPUS ?= 1
 TYPE ?= INT32
 ENERGY ?= 0
+PRINT ?= 1
 
 define conf_filename
 	${BUILDDIR}/.NR_DPUS_$(1)_NR_TASKLETS_$(2)_BL_$(3)_TYPE_$(4).conf
