@@ -24,7 +24,7 @@ DPU_SOURCES := $(wildcard ${DPU_DIR}/*.c)
 
 __dirs := $(shell mkdir -p ${BUILDDIR})
 
-COMMON_FLAGS := -w -I${COMMON_INCLUDES}
+COMMON_FLAGS := -w -I${COMMON_INCLUDES} -D${PRINT}
 HOST_FLAGS := ${COMMON_FLAGS} -std=c11 -O3 `dpu-pkg-config --cflags --libs dpu` -DNR_TASKLETS=${NR_TASKLETS} -DNR_DPUS=${NR_DPUS} -DBL=${BL} -D${TYPE} -DENERGY=${ENERGY}
 DPU_FLAGS := ${COMMON_FLAGS} -O2 -DNR_TASKLETS=${NR_TASKLETS} -DBL=${BL} -D${TYPE}
 
