@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -34,11 +35,11 @@ func (this *Compiler) Build() {
 
 	command := exec.Command("docker", "build", "-t", "bongjoonhyun/upimulator", docker_dirpath)
 
-	err := command.Run()
-
+	output, err := command.CombinedOutput()
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(string(output))
 }
 
 func (this *Compiler) Compile() {
@@ -47,6 +48,7 @@ func (this *Compiler) Compile() {
 }
 
 func (this *Compiler) CompileBenchmark() {
+	fmt.Println("Compiling Benchmark")
 	command := exec.Command(
 		"docker",
 		"run",
@@ -63,11 +65,12 @@ func (this *Compiler) CompileBenchmark() {
 		strconv.Itoa(this.num_tasklets),
 	)
 
-	err := command.Run()
-
+	// err := command.Run()
+	output, err := command.CombinedOutput()
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(string(output))
 }
 
 func (this *Compiler) CompileSdk() {

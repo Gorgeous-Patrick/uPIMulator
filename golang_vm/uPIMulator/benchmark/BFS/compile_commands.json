@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/host",
+  "command": "gcc -DDPU_BINARY=\\\"dev\\\" -I/opt/upmem/include/dpu -I/workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/host/../support    -o CMakeFiles/host.dir/app.o   -c /workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/host/app.c",
+  "file": "/workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/host/app.c"
+},
+{
+  "directory": "/workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/dpu",
+  "command": "clang  -I/workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/dpu/../support  --target=dpu-upmem-dpurte -D__UPMEM__ -O2   -o CMakeFiles/dpu_program.dir/task.o   -c /workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/dpu/task.c",
+  "file": "/workspaces/uPIMulator/golang_vm/uPIMulator/benchmark/BFS/dpu/task.c"
+}
+]
