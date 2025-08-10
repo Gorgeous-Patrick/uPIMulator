@@ -38,6 +38,7 @@ func (this *Assembler) Init(command_line_parser *misc.CommandLineParser) {
 	this.assemblables = make(map[string]Assemblable, 0)
 
 	this.assemblables["BS"] = new(prim.Bs)
+	this.assemblables["BFS"] = new(prim.Bfs)
 	this.assemblables["GEMV"] = new(prim.Gemv)
 	this.assemblables["HST-L"] = new(prim.HstL)
 	this.assemblables["HST-S"] = new(prim.HstS)
