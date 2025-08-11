@@ -29,6 +29,7 @@ BARRIER_INIT(my_barrier, NR_TASKLETS);
 
 extern int main_kernel1(void);
 
+
 // int (*kernels[nr_kernels])(void) = {main_kernel1};
 
 int main(void) { 
@@ -79,22 +80,15 @@ int main_kernel1() {
 
     // Each tasklet processes one walker
     uint32_t sum = 0;
-    // for (uint32_t i = 0; i < num_nodes_assigned; i++) {
-    //     node_t node;
-    //     if (find_node_by_id(i, &node)) {
-    //         // If found, add the node id to the sum
-    //         sum += node.id;
-    //     }
-    // }
-
     for (uint32_t i = 0; i < container_size; i++) {
         uint32_t node_id = container_get(i);
         
         // Find the node by id
-        node_t node;
-        if (find_node_by_id(node_id, &node)) {
+        // node_t node;
+        node_t *node = (node_t *)mem_alloc(aligned_malloc_size(sizeof(node_t)));
+        if (find_node_by_id(node_id, node)) {
             // If found, add the node id to the sum
-            sum += node.id;
+            sum += node->id;
         }
     }
     mram_write(&sum, (__mram_ptr void*)(DPU_MRAM_HEAP_POINTER), aligned_malloc_size(sizeof(uint32_t)));
