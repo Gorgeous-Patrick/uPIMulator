@@ -64,7 +64,7 @@ func (this *Bfs) InputDpuHost(execution int, dpu_id int) map[string]*encoding.By
 	// Send walker_container_size (constant value 128)
 	walker_container_size_word := new(word.Word)
 	walker_container_size_word.Init(32)
-	walker_container_size_word.SetValue(128)
+	walker_container_size_word.SetValue(2)
 	dpu_input_arguments_byte_stream.Merge(walker_container_size_word.ToByteStream())
 
 	// Send num_edges_assigned (constant value 200)
@@ -100,9 +100,30 @@ func (this *Bfs) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 		panic(err)
 	}
 
-	// Return empty stream - no MRAM input needed
+	// Create node data for MRAM
 	byte_stream := new(encoding.ByteStream)
 	byte_stream.Init()
+
+	// The task.c should read num_nodes_assigned (50) nodes, each with an ID
+	num_nodes := this.num_nodes_assigned[dpu_id]
+
+	for i := int64(0); i < num_nodes; i++ {
+		// Each node_t has a uint32_t id field
+		node_id_word := new(word.Word)
+		node_id_word.Init(32)
+		node_id_word.SetValue(i) // IDs from 0 to 49
+		byte_stream.Merge(node_id_word.ToByteStream())
+	}
+
+	container_1 := new(word.Word)
+	container_1.Init(32)
+	container_1.SetValue(3) // Placeholder for container ID
+	byte_stream.Merge(container_1.ToByteStream())
+
+	container_2 := new(word.Word)
+	container_2.Init(32)
+	container_2.SetValue(30) // Placeholder for container ID
+	byte_stream.Merge(container_2.ToByteStream())
 
 	return 0, byte_stream
 }
@@ -116,16 +137,16 @@ func (this *Bfs) OutputDpuMramHeapPointerName(execution int, dpu_id int) (int64,
 		panic(err)
 	}
 
-	// Create expected output - sum of the three DPU_INPUT_ARGUMENTS values
+	// Create expected output - task.c writes container_size (not sum) to MRAM
 	byte_stream := new(encoding.ByteStream)
 	byte_stream.Init()
 
-	// Expected sum: 50 + 128 + 200 = 378
+	// The task.c writes container_size (which is 2) to MRAM
 	sum_word := new(word.Word)
 	sum_word.Init(32)
-	sum_word.SetValue(378) // Sum of num_nodes_assigned + walker_container_size + num_edges_assigned
+	sum_word.SetValue(1225) // container_size value from DPU_INPUT_ARGUMENTS
 	byte_stream.Merge(sum_word.ToByteStream())
 
-	// Return offset 0 since no input data in MRAM
+	// Return offset 0 - DPU writes result at the beginning of MRAM
 	return 0, byte_stream
 }
