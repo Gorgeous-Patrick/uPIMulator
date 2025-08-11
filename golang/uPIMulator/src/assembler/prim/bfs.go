@@ -144,7 +144,7 @@ func (this *Bfs) OutputDpuMramHeapPointerName(execution int, dpu_id int) (int64,
 	// The task.c writes container_size (which is 2) to MRAM
 	sum_word := new(word.Word)
 	sum_word.Init(32)
-	sum_word.SetValue(1225) // container_size value from DPU_INPUT_ARGUMENTS
+	sum_word.SetValue(33) // container_size value from DPU_INPUT_ARGUMENTS
 	byte_stream.Merge(sum_word.ToByteStream())
 
 	// Return offset 0 - DPU writes result at the beginning of MRAM
