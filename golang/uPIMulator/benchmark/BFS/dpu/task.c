@@ -26,11 +26,12 @@ BARRIER_INIT(my_barrier, NR_TASKLETS);
 
 extern int main_kernel1(void);
 
-int (*kernels[nr_kernels])(void) = {main_kernel1};
+// int (*kernels[nr_kernels])(void) = {main_kernel1};
 
 int main(void) { 
     // Kernel
-    return kernels[DPU_INPUT_ARGUMENTS.kernel](); 
+    // return kernels[DPU_INPUT_ARGUMENTS.kernel](); 
+    return main_kernel1(); // Directly call the main_kernel1 function
 }
 
 // main_kernel1
@@ -45,34 +46,17 @@ int main_kernel1() {
     // Barrier
     barrier_wait(&my_barrier);
 
-    uint32_t input_size_dpu_bytes = DPU_INPUT_ARGUMENTS.size; // Input size per DPU in bytes
-    uint32_t input_size_dpu_bytes_transfer = DPU_INPUT_ARGUMENTS.transfer_size; // Transfer input size per DPU in bytes
 
-    // Address of the current processing block in MRAM
-    uint32_t base_tasklet = tasklet_id << BLOCK_SIZE_LOG2;
-    uint32_t mram_base_addr_A = (uint32_t)DPU_MRAM_HEAP_POINTER;
-    uint32_t mram_base_addr_B = (uint32_t)(DPU_MRAM_HEAP_POINTER + input_size_dpu_bytes_transfer);
+    // Get number of nodes and walkers assigned
+    uint32_t num_nodes_assigned = DPU_INPUT_ARGUMENTS.num_nodes_assigned;
+    uint32_t container_size = DPU_INPUT_ARGUMENTS.walker_container_size;
+    uint32_t num_edges_assigned = DPU_INPUT_ARGUMENTS.num_edges_assigned;
 
-    // Initialize a local cache to store the MRAM block
-    T *cache_A = (T *) mem_alloc(BLOCK_SIZE);
-    T *cache_B = (T *) mem_alloc(BLOCK_SIZE);
-
-    for(unsigned int byte_index = base_tasklet; byte_index < input_size_dpu_bytes; byte_index += BLOCK_SIZE * NR_TASKLETS){
-
-        // Bound checking
-        uint32_t l_size_bytes = (byte_index + BLOCK_SIZE >= input_size_dpu_bytes) ? (input_size_dpu_bytes - byte_index) : BLOCK_SIZE;
-
-        // Load cache with current MRAM block
-        mram_read((__mram_ptr void const*)(mram_base_addr_A + byte_index), cache_A, l_size_bytes);
-        mram_read((__mram_ptr void const*)(mram_base_addr_B + byte_index), cache_B, l_size_bytes);
-
-        // Computer vector addition
-        vector_addition(cache_B, cache_A, l_size_bytes >> DIV);
-
-        // Write cache to current MRAM block
-        mram_write(cache_B, (__mram_ptr void*)(mram_base_addr_B + byte_index), l_size_bytes);
-
-    }
-
+    // Each tasklet processes one walker
+    uint32_t sum = num_edges_assigned + num_nodes_assigned + container_size;
+    // Write sum to MRAM for verification
+    mram_write(&sum, (__mram_ptr void*)(DPU_MRAM_HEAP_POINTER + tasklet_id * sizeof(uint32_t)), 8);
+    // Process the walker (this is a placeholder for actual walker processing logic)
+    
     return 0;
 }

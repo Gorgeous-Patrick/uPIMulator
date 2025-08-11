@@ -1,0 +1,14 @@
+{
+  "name": "UPMEM Dev Container",
+  "image": "bongjoonhyun/upimulator",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind"
+  ]
+}

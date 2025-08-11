@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -66,6 +67,9 @@ func (this *Compiler) CompileBenchmark() {
 		"--num_tasklets",
 		strconv.Itoa(this.num_tasklets),
 	)
+
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
 
 	err := command.Run()
 

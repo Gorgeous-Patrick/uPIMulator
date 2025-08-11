@@ -3,12 +3,9 @@
 
 // Structures used by both the host and the dpu to communicate information
 typedef struct {
-    uint32_t size;
-    uint32_t transfer_size;
-	enum kernels {
-	    kernel1 = 0,
-	    nr_kernels = 1,
-	} kernel;
+    uint32_t num_nodes_assigned;
+		uint32_t walker_container_size;
+		uint32_t num_edges_assigned;
 } dpu_arguments_t;
 
 // Transfer size between MRAM and WRAM
