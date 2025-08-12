@@ -20,6 +20,7 @@ typedef struct {
     uint32_t from;
     uint32_t to;
     uint32_t type;
+    uint32_t dummy;
 } edge_t;
 
 __host dpu_arguments_t DPU_INPUT_ARGUMENTS;
@@ -55,8 +56,9 @@ bool find_node_by_id(uint32_t id, node_t *node) {
 }
 
 uint32_t container_get(uint32_t index) {
+    uint32_t base = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * sizeof(node_t) + DPU_INPUT_ARGUMENTS.num_edges_assigned * sizeof(edge_t);
     uint64_t value;
-    mram_read((__mram_ptr void*)(DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * sizeof(node_t) + index * sizeof(uint32_t)), &value, aligned_malloc_size(sizeof(uint32_t)));
+    mram_read((__mram_ptr void*)(base + index * sizeof(uint32_t)), &value, aligned_malloc_size(sizeof(uint32_t)));
     return value;
 }
 
@@ -79,18 +81,18 @@ int main_kernel1() {
     uint32_t num_edges_assigned = DPU_INPUT_ARGUMENTS.num_edges_assigned;
 
     // Each tasklet processes one walker
-    uint32_t sum = 0;
-    for (uint32_t i = 0; i < container_size; i++) {
-        uint32_t node_id = container_get(i);
-        
-        // Find the node by id
-        // node_t node;
-        node_t *node = (node_t *)mem_alloc(aligned_malloc_size(sizeof(node_t)));
-        if (find_node_by_id(node_id, node)) {
-            // If found, add the node id to the sum
-            sum += node->id;
-        }
-    }
+    uint32_t sum = container_get(1);
+    // for (uint32_t i = 0; i < container_size; i++) {
+    //     uint32_t node_id = container_get(i);
+    //     // Find the node by id
+    //     node_t *node = (node_t *)mem_alloc(aligned_malloc_size(sizeof(node_t)));
+    //     if (find_node_by_id(node_id, node)) {
+    //         // If found, add the node id to the sum
+    //         sum += node->id;
+    //     } else {
+    //         sum = -1;
+    //     }
+    // }
     mram_write(&sum, (__mram_ptr void*)(DPU_MRAM_HEAP_POINTER), aligned_malloc_size(sizeof(uint32_t)));
     
     return 0;
