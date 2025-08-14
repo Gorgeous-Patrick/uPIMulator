@@ -93,6 +93,7 @@ int main_kernel1() {
     //         sum = -1;
     //     }
     // }
+    assert(sum == 1);
     mram_write(&sum, (__mram_ptr void*)(DPU_MRAM_HEAP_POINTER), aligned_malloc_size(sizeof(uint32_t)));
     
     return 0;
