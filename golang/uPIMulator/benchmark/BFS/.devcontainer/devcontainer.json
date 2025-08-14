@@ -1,6 +1,8 @@
 {
   "name": "UPMEM Dev Container",
-  "image": "bongjoonhyun/upimulator",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "customizations": {
     "vscode": {
       "settings": {

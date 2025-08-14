@@ -1,0 +1,13 @@
+# CMake generated files
+build/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+_CPack_Packages/
+DartConfiguration.tcl
+Testing/
+host
+BFS_device
