@@ -35,7 +35,7 @@ func (this *Bfs) Init(command_line_parser *misc.CommandLineParser) {
 	for i := 0; i < this.num_dpus; i++ {
 		this.num_nodes_assigned[i] = 50   // Simple constant
 		this.walker_container_size[i] = 2 // Simple constant
-		this.num_edges_assigned[i] = 200  // Simple constant
+		this.num_edges_assigned[i] = 20  // Simple constant
 	}
 }
 
