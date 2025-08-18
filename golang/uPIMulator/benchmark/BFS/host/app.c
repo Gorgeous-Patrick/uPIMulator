@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     }
 
     DPU_FOREACH(set, dpu, i) {
-        walker_t walker = {.visited = {128}}; // Example walker initialization
+        walker_t walker = {.visited = {0}}; // Example walker initialization
         void * walker_ptr = malloc(aligned_malloc_size(sizeof(walker_t)));
         memcpy(walker_ptr, &walker, sizeof(walker_t));
         uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + input_arguments[i].num_edges_assigned * aligned_malloc_size(sizeof(edge_t));
