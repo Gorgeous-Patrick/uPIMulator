@@ -98,8 +98,8 @@ void pop_element_from_container() {
     }
     
     uint32_t base = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + DPU_INPUT_ARGUMENTS.num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t));
-    mram_read((__mram_ptr void*)(base), container_value_buffer, aligned_malloc_size(sizeof(uint32_t)));
     #ifdef DEBUG
+    mram_read((__mram_ptr void*)(base), container_value_buffer, aligned_malloc_size(sizeof(uint32_t)));
     printf("Popping value: %u\n", *container_value_buffer);
     #endif
     // Shift the remaining elements in the container
