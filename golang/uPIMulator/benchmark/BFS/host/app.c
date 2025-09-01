@@ -79,15 +79,23 @@ int main(int argc, char **argv) {
 
     // Distribute container values
     DPU_FOREACH(set, dpu, i) {
+        uint64_t *container_values = malloc(aligned_malloc_size(sizeof(uint64_t) * input_arguments[i].walker_container_size));
         for (int j = 0; j < input_arguments[i].walker_container_size; j++) {
-            uint32_t value = j; // Example value
-            void * container_ptr = malloc(aligned_malloc_size(sizeof(uint32_t)));
-            memcpy(container_ptr, &value, sizeof(uint32_t));
-            uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + input_arguments[i].num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t)) + j * aligned_malloc_size(sizeof(uint32_t));
-            DPU_ASSERT(dpu_prepare_xfer(dpu, container_ptr));
-            DPU_ASSERT(dpu_push_xfer(dpu, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, addr, aligned_malloc_size(sizeof(uint32_t)), DPU_XFER_DEFAULT));
-            free(container_ptr);
+            container_values[j] = j; // Example value
         }
+        uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + input_arguments[i].num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t));
+        DPU_ASSERT(dpu_prepare_xfer(dpu, container_values));
+        DPU_ASSERT(dpu_push_xfer(dpu, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, addr, aligned_malloc_size(sizeof(uint64_t) * input_arguments[i].walker_container_size), DPU_XFER_DEFAULT));
+        free(container_values);
+        // for (int j = 0; j < input_arguments[i].walker_container_size; j++) {
+        //     uint32_t value = j; // Example value
+        //     void * container_ptr = malloc(aligned_malloc_size(sizeof(uint32_t)));
+        //     memcpy(container_ptr, &value, sizeof(uint32_t));
+        //     uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + input_arguments[i].num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t)) + j * aligned_malloc_size(sizeof(uint32_t));
+        //     DPU_ASSERT(dpu_prepare_xfer(dpu, container_ptr));
+        //     DPU_ASSERT(dpu_push_xfer(dpu, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, addr, aligned_malloc_size(sizeof(uint32_t)), DPU_XFER_DEFAULT));
+        //     free(container_ptr);
+        // }
     }
     DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
 

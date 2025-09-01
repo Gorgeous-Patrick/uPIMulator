@@ -155,24 +155,24 @@ func (this *Bfs) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 		byte_stream.Merge(padding_byte.ToByteStream())
 	}
 
-	// Walker container: uint32_t array of node ids (container_size = 2)
-	container_1 := new(word.Word)
-	container_1.Init(32)
-	container_1.SetValue(1) // Placeholder for container ID
-	byte_stream.Merge(container_1.ToByteStream())
+	// // Walker container: uint64_t array of node ids (container_size = 2)
+	// container_1 := new(word.Word)
+	// container_1.Init(64)
+	// container_1.SetValue(0) // Placeholder for container ID
+	// byte_stream.Merge(container_1.ToByteStream())
 
-	container_2 := new(word.Word)
-	container_2.Init(32)
-	container_2.SetValue(1) // Placeholder for container ID
-	byte_stream.Merge(container_2.ToByteStream())
+	// container_2 := new(word.Word)
+	// container_2.Init(64)
+	// container_2.SetValue(0) // Placeholder for container ID
+	// byte_stream.Merge(container_2.ToByteStream())
 
-	// for i := int64(0); i < this.walker_container_size[dpu_id]; i++ {
-	// 	// Each container element is a uint32_t id field
-	// 	walker_id_word := new(word.Word)
-	// 	walker_id_word.Init(32)
-	// 	walker_id_word.SetValue(i) // IDs from 0 to 127
-	// 	byte_stream.Merge(walker_id_word.ToByteStream())
-	// }
+	for i := int64(0); i < this.walker_container_size[dpu_id]; i++ {
+		// Each container element is a uint32_t id field
+		walker_id_word := new(word.Word)
+		walker_id_word.Init(64)
+		walker_id_word.SetValue(i) // IDs from 0 to 127
+		byte_stream.Merge(walker_id_word.ToByteStream())
+	}
 
 	return 0, byte_stream
 }

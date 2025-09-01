@@ -15,4 +15,5 @@ if __name__ == "__main__":
 
     binary_filepath = os.path.join(build_dirpath, "uPIMulator")
 
-    subprocess.run(["go", "build", "-C", src_dirpath, "-o", binary_filepath])
+    proc = subprocess.run(["go", "build", "-C", src_dirpath, "-o", binary_filepath])
+    print(proc.stdout)

@@ -9,6 +9,7 @@
 #include <alloc.h>
 #include <perfcounter.h>
 #include <barrier.h>
+#define DEBUG
 
 #include "../support/common.h"
 
@@ -19,20 +20,20 @@ __host dpu_arguments_t DPU_INPUT_ARGUMENTS;
 // Barrier
 // BARRIER_INIT(my_barrier, NR_TASKLETS);
 
-bool find_node_by_id(uint32_t id, node_t *node) {
+bool find_node_by_id(uint64_t id, node_t *node) {
     // Process the walker (this is a placeholder for actual walker processing logic)
+    bool flag = false;
     for (uint32_t i = 0; i < DPU_INPUT_ARGUMENTS.num_nodes_assigned; i++) {
         mram_read((__mram_ptr void*)(DPU_MRAM_HEAP_POINTER + i * aligned_malloc_size(sizeof(node_t))), node, aligned_malloc_size(sizeof(node_t)));
-        if (node->id == id) {
-            return true;
-        }
+        #ifdef DEBUG
+        printf("Reading node at index %u from MRAM, its id is %u, looking for ID: %lu\n", i, node->id, id);
+        #endif
+        flag = (node->id == id);
+        // if (node->id == id) {
+        //     // return true;
+        // }
     }
     return false;
-}
-
-void container_get(uint32_t index, uint32_t *value) {
-    uint32_t base = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + DPU_INPUT_ARGUMENTS.num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t));
-    mram_read((__mram_ptr void*)(base + index * aligned_malloc_size(sizeof(uint32_t))), value, aligned_malloc_size(sizeof(uint32_t)));
 }
 
 void get_walker(walker_t *walker) {
@@ -47,21 +48,28 @@ void save_walker(walker_t *walker) {
     mram_write(walker, (__mram_ptr void*)(addr), aligned_malloc_size(sizeof(walker_t)));
 }
 
-uint32_t *container_value_buffer;
+uint64_t *container_value_buffer;
 node_t *node_buffer;
 walker_t *walker_buffer;
+#define MAX_CONTAINER_SIZE 128
 void mem_init() {
-    // Initialize the memory for the container value buffer, only one uint32_t.
-    container_value_buffer = (uint32_t *) mem_alloc(aligned_malloc_size(sizeof(uint32_t)));
+    // Initialize the memory for the container value buffer, only one uint64_t.
+    container_value_buffer = (uint64_t *) mem_alloc(aligned_malloc_size(sizeof(uint64_t) * MAX_CONTAINER_SIZE));
     node_buffer = (node_t *) mem_alloc(aligned_malloc_size(sizeof(node_t)));
     walker_buffer = (walker_t *) mem_alloc(aligned_malloc_size(sizeof(walker_t)));
 }
 
 void print_container() {
     for (uint32_t i = 0; i < DPU_INPUT_ARGUMENTS.walker_container_size; i++) {
-        container_get(i, container_value_buffer);
-        printf("Container value at index %u: %u\n", i, *container_value_buffer);
+        // container_get(i, container_value_buffer);
+        printf("Container value at index %u: %lu\n", i, container_value_buffer[i]);
     }
+}
+
+void load_container_from_mram() {
+    uint32_t base = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + DPU_INPUT_ARGUMENTS.num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t));
+    int container_size = DPU_INPUT_ARGUMENTS.walker_container_size;
+    mram_read((__mram_ptr void*)base, container_value_buffer, aligned_malloc_size(sizeof(uint64_t) * container_size));
 }
 
 void push_new_elements_to_container(uint32_t id) {
@@ -76,9 +84,8 @@ void push_new_elements_to_container(uint32_t id) {
         printf("Pushing edge from %u to %u\n", edge->from, edge->to);
         #endif
         // Push the edge to the container
-        uint32_t value = edge->to;
-        uint32_t base = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + DPU_INPUT_ARGUMENTS.num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t));
-        mram_write(&value, (__mram_ptr void*)base + DPU_INPUT_ARGUMENTS.walker_container_size * aligned_malloc_size(sizeof(uint32_t)), aligned_malloc_size(sizeof(uint32_t)));
+        uint64_t value = edge->to;
+        container_value_buffer[DPU_INPUT_ARGUMENTS.walker_container_size] = value;
         // Update the walker container size
         DPU_INPUT_ARGUMENTS.walker_container_size++;
         #ifdef DEBUG
@@ -96,22 +103,21 @@ void pop_element_from_container() {
         #endif
         return;
     }
-    
-    uint32_t base = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + DPU_INPUT_ARGUMENTS.num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t));
-    mram_read((__mram_ptr void*)(base), container_value_buffer, aligned_malloc_size(sizeof(uint32_t)));
-    #ifdef DEBUG
-    printf("Popping value: %u\n", *container_value_buffer);
-    #endif
-    // Shift the remaining elements in the container
-    for (uint32_t i = 1; i < DPU_INPUT_ARGUMENTS.walker_container_size; i++) {
-        mram_read((__mram_ptr void*)(base + i * aligned_malloc_size(sizeof(uint32_t))), container_value_buffer, aligned_malloc_size(sizeof(uint32_t)));
-        mram_write(container_value_buffer, (__mram_ptr void*)(base + (i - 1) * aligned_malloc_size(sizeof(uint32_t))), aligned_malloc_size(sizeof(uint32_t)));
+
+    for (int i = 0; i < DPU_INPUT_ARGUMENTS.walker_container_size - 1; i++) {
+        container_value_buffer[i] = container_value_buffer[i + 1];
     }
     DPU_INPUT_ARGUMENTS.walker_container_size--;
     #ifdef DEBUG
     printf("New walker container size after pop: %u\n", DPU_INPUT_ARGUMENTS.walker_container_size);
     print_container();
     #endif
+}
+
+void save_container_to_mram() {
+    uint32_t base = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + DPU_INPUT_ARGUMENTS.num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t));
+    int container_size = DPU_INPUT_ARGUMENTS.walker_container_size;
+    mram_write(container_value_buffer, (__mram_ptr void*)(base), aligned_malloc_size(sizeof(uint64_t) * container_size));
 }
 
 void run_ability(node_t *node, walker_t *walker) {
@@ -163,42 +169,40 @@ int main_kernel1() {
     printf("num_edges_assigned = %u\n", num_edges_assigned);
     #endif
 
-    // // Each tasklet processes one walker
-    // // uint32_t sum = container_get(1);
-    // for (uint32_t i = 0; i < num_nodes_assigned; i++) {
-    //     node_t *node = (node_t *)mem_alloc(aligned_malloc_size(sizeof(node_t)));
-    //     if (find_node_by_id(i, node)) {
-    //         printf("Found node with id: %u %u\n", i, node->id);
-    //     } else {
-    //         printf("Node with id %u not found\n", i);
-    //     }
+    get_walker(walker_buffer);
+    load_container_from_mram();
+    #ifdef DEBUG
+    print_container();
+    #endif
+
+    // while (DPU_INPUT_ARGUMENTS.walker_container_size > 0) {
+        // Get the first node from the container
+        uint64_t curr_node_id = container_value_buffer[0];
+        #ifdef DEBUG
+        printf("Currently on Node ID: %lu\n", curr_node_id);
+        #endif
+        // if (find_node_by_id(curr_node_id, node_buffer)) {
+        if (true) {
+            // #ifdef DEBUG
+            // printf("Node found in container: %u\n", node_buffer->id);
+            // #endif
+            // pop_element_from_container();
+            // run_ability(node_buffer, walker_buffer);
+        } else {
+            // #ifdef DEBUG
+            // printf("Node with id %lu not found in container\n", curr_node_id);
+            // #endif
+            // break;
+        }
     // }
 
-    int cnt = 0;
-    get_walker(walker_buffer);
-    
-    while (DPU_INPUT_ARGUMENTS.walker_container_size > 0) {
-        // Get the first node from the container
-        container_get(0, container_value_buffer);
-        if (find_node_by_id(*container_value_buffer, node_buffer)) {
-            #ifdef DEBUG
-            printf("Node found in container: %u\n", node_buffer->id);
-            #endif
-            pop_element_from_container();
-            run_ability(node_buffer, walker_buffer);
-        } else {
-            #ifdef DEBUG
-            printf("Node with id %u not found in container\n", *container_value_buffer);
-            #endif
-            break;
-        }
-    }
-
     save_walker(walker_buffer);
+    save_container_to_mram();
     #ifdef DEBUG
     printf("Ending.\n");
     print_container();
     #endif
-    // mram_write(&sum, (__mram_ptr void*)(DPU_MRAM_HEAP_POINTER), aligned_malloc_size(sizeof(uint32_t)));
+    uint32_t sum = 0;
+    mram_write(&sum, (__mram_ptr void*)(DPU_MRAM_HEAP_POINTER), aligned_malloc_size(sizeof(uint32_t)));
     return 0;
 }
