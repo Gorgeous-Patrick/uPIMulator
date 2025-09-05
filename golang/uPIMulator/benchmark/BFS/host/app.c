@@ -30,9 +30,7 @@ int main(int argc, char **argv) {
 
     dpu_arguments_t input_arguments[NR_DPUS];
     for (unsigned int i = 0; i < NR_DPUS; i++) {
-        input_arguments[i].num_nodes_assigned = 5; // Example value
-        input_arguments[i].walker_container_size = 10; // Example value
-        input_arguments[i].num_edges_assigned = 4; // Example value
+        input_arguments[i].num_nodes_assigned = 3; // Example value
     }
 
     // Copy input arrays
@@ -56,39 +54,15 @@ int main(int argc, char **argv) {
 
 
     DPU_FOREACH(set, dpu, i) {
-        for (int j = 0; j < input_arguments[i].num_edges_assigned; j++) {
-            uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + j * aligned_malloc_size(sizeof(edge_t));
-            void * edge_ptr = malloc(aligned_malloc_size(sizeof(edge_t)));
-            edge_t edge = {.from = 0, .to = j, .type = 0}; // Example edge initialization
-            memcpy(edge_ptr, &edge, sizeof(edge_t));
-            DPU_ASSERT(dpu_prepare_xfer(dpu, edge_ptr));
-            DPU_ASSERT(dpu_push_xfer(dpu, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, addr, aligned_malloc_size(sizeof(edge_t)), DPU_XFER_DEFAULT));
-            free(edge_ptr);
-        }
-    }
-
-    DPU_FOREACH(set, dpu, i) {
         walker_t walker = {.visited = {0}}; // Example walker initialization
         void * walker_ptr = malloc(aligned_malloc_size(sizeof(walker_t)));
         memcpy(walker_ptr, &walker, sizeof(walker_t));
-        uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + input_arguments[i].num_edges_assigned * aligned_malloc_size(sizeof(edge_t));
+        uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t));
         DPU_ASSERT(dpu_prepare_xfer(dpu, walker_ptr));
         DPU_ASSERT(dpu_push_xfer(dpu, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, addr, aligned_malloc_size(sizeof(walker_t)), DPU_XFER_DEFAULT));
         free(walker_ptr);
     }
 
-    // Distribute container values
-    DPU_FOREACH(set, dpu, i) {
-        for (int j = 0; j < input_arguments[i].walker_container_size; j++) {
-            uint32_t value = j; // Example value
-            void * container_ptr = malloc(aligned_malloc_size(sizeof(uint32_t)));
-            memcpy(container_ptr, &value, sizeof(uint32_t));
-            uint32_t addr = input_arguments[i].num_nodes_assigned * aligned_malloc_size(sizeof(node_t)) + input_arguments[i].num_edges_assigned * aligned_malloc_size(sizeof(edge_t)) + aligned_malloc_size(sizeof(walker_t)) + j * aligned_malloc_size(sizeof(uint32_t));
-            DPU_ASSERT(dpu_prepare_xfer(dpu, container_ptr));
-            DPU_ASSERT(dpu_push_xfer(dpu, DPU_XFER_TO_DPU, DPU_MRAM_HEAP_POINTER_NAME, addr, aligned_malloc_size(sizeof(uint32_t)), DPU_XFER_DEFAULT));
-            free(container_ptr);
-        }
-    }
     DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
 
     DPU_FOREACH(set, dpu) {

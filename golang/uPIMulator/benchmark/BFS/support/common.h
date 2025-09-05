@@ -4,19 +4,11 @@
 // Structures used by both the host and the dpu to communicate information
 typedef struct {
     uint32_t num_nodes_assigned;
-		uint32_t walker_container_size;
-		uint32_t num_edges_assigned;
 } dpu_arguments_t;
 
 typedef struct {
     uint32_t id;
 } node_t;
-
-typedef struct {
-    uint32_t from;
-    uint32_t to;
-    uint32_t type;
-} edge_t;
 
 typedef struct {
 	  uint32_t visited[32]; // Example size
