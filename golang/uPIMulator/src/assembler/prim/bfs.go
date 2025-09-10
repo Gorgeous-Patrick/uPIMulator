@@ -1,7 +1,13 @@
 package prim
 
 import (
+	"bufio"
+	"encoding/binary"
 	"errors"
+	"fmt"
+	"io"
+	"log"
+	"os"
 	"uPIMulator/src/abi/encoding"
 	"uPIMulator/src/abi/word"
 	"uPIMulator/src/misc"
@@ -13,9 +19,8 @@ type Bfs struct {
 	num_executions int
 
 	// BFS-specific parameters matching dpu_arguments_t
-	num_nodes_assigned    []int64
-	walker_container_size []int64
-	num_edges_assigned    []int64
+	task_id []int64
+	input_size [] int64
 }
 
 func (this *Bfs) Init(command_line_parser *misc.CommandLineParser) {
@@ -28,15 +33,12 @@ func (this *Bfs) Init(command_line_parser *misc.CommandLineParser) {
 	this.num_executions = 1
 
 	// Initialize with simple constant values
-	this.num_nodes_assigned = make([]int64, this.num_dpus)
-	this.walker_container_size = make([]int64, this.num_dpus)
-	this.num_edges_assigned = make([]int64, this.num_dpus)
+	// this.num_nodes_assigned = make([]int64, this.num_dpus)
+	// this.walker_container_size = make([]int64, this.num_dpus)
+	// this.num_edges_assigned = make([]int64, this.num_dpus)
+	this.task_id = make([]int64, this.num_dpus)
+	this.input_size = make([]int64, this.num_dpus)
 
-	for i := 0; i < this.num_dpus; i++ {
-		this.num_nodes_assigned[i] = 50   // Simple constant
-		this.walker_container_size[i] = 2 // Simple constant
-		this.num_edges_assigned[i] = 20  // Simple constant
-	}
 }
 
 func (this *Bfs) NumExecutions() int {
@@ -52,29 +54,31 @@ func (this *Bfs) InputDpuHost(execution int, dpu_id int) map[string]*encoding.By
 		panic(err)
 	}
 
-	dpu_input_arguments_byte_stream := new(encoding.ByteStream)
-	dpu_input_arguments_byte_stream.Init()
+	dpu_task_id_byte_stream := new(encoding.ByteStream)
+	dpu_task_id_byte_stream.Init()
 
-	// Send num_nodes_assigned (constant value 50)
-	num_nodes_assigned_word := new(word.Word)
-	num_nodes_assigned_word.Init(32)
-	num_nodes_assigned_word.SetValue(this.num_nodes_assigned[dpu_id]) // Send actual num_nodes_assigned (50)
-	dpu_input_arguments_byte_stream.Merge(num_nodes_assigned_word.ToByteStream())
 
-	// Send walker_container_size (constant value 2)
-	walker_container_size_word := new(word.Word)
-	walker_container_size_word.Init(32)
-	walker_container_size_word.SetValue(this.walker_container_size[dpu_id]) // Send actual walker_container_size (2)
-	dpu_input_arguments_byte_stream.Merge(walker_container_size_word.ToByteStream())
+	filename := fmt.Sprintf("task_bins/Task%d.bin", dpu_id)
+	// If this name exists, assign the task id to dpu_id, otherwise assign -1.
+	if fileinfo, err := os.Stat(filename); err == nil {
+		this.task_id[dpu_id] = int64(dpu_id)
+		// Get the size of the file and assign it to input_size for this DPU
+		this.input_size[dpu_id] = fileinfo.Size()
+		fmt.Print("Input size for DPU ", dpu_id, " is ", this.input_size[dpu_id], "\n")
+	} else {
+		this.task_id[dpu_id] = -1
+	}
 
-	// Send num_edges_assigned (constant value 200)
-	num_edges_assigned_word := new(word.Word)
-	num_edges_assigned_word.Init(32)
-	num_edges_assigned_word.SetValue(this.num_edges_assigned[dpu_id]) // Send actual num_edges_assigned (200)
-	dpu_input_arguments_byte_stream.Merge(num_edges_assigned_word.ToByteStream())
+	// Send DPU task ID (constant value 0)
+
+	task_id_word := new(word.Word)
+	task_id_word.Init(64)
+	task_id_word.SetValue(this.task_id[dpu_id]) // Send actual task_id (200)
+	dpu_task_id_byte_stream.Merge(task_id_word.ToByteStream())
 
 	dpu_host := make(map[string]*encoding.ByteStream, 0)
-	dpu_host["DPU_INPUT_ARGUMENTS"] = dpu_input_arguments_byte_stream
+	
+	dpu_host["task_id"] = dpu_task_id_byte_stream
 
 	return dpu_host
 }
@@ -104,75 +108,55 @@ func (this *Bfs) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 	byte_stream := new(encoding.ByteStream)
 	byte_stream.Init()
 
-	// The task.c should read num_nodes_assigned (50) nodes, each with an ID
-	num_nodes := this.num_nodes_assigned[dpu_id]
-	num_edges := this.num_edges_assigned[dpu_id]
-
-	for i := int64(0); i < num_nodes; i++ {
-		// Each node_t has a uint32_t id field
-		node_id_word := new(word.Word)
-		node_id_word.Init(32)
-		node_id_word.SetValue(i) // IDs from 0 to 49
-		byte_stream.Merge(node_id_word.ToByteStream())
-	}
-	for i := int64(0); i < num_edges; i++ {
-		// Each edge_t has three uint32_t id fields (from to type).
-		from_node_id_word := new(word.Word)
-		from_node_id_word.Init(32)
-		from_node_id_word.SetValue(i % num_nodes)
-		byte_stream.Merge(from_node_id_word.ToByteStream())
-
-		to_node_id_word := new(word.Word)
-		to_node_id_word.Init(32)
-		to_node_id_word.SetValue((i + 1) % num_nodes)
-		byte_stream.Merge(to_node_id_word.ToByteStream())
-
-		edge_type_word := new(word.Word)
-		edge_type_word.Init(32)
-		edge_type_word.SetValue(0) // Placeholder for edge type
-		byte_stream.Merge(edge_type_word.ToByteStream())
-
-		dummy_word := new(word.Word)
-		dummy_word.Init(32)
-		dummy_word.SetValue(0) // Placeholder for edge type
-		byte_stream.Merge(dummy_word.ToByteStream())
-	}
-
-	// Add walker struct: walker_t with bool visited[10]
-	// Each bool takes 1 byte, but we'll align to 32-bit words for simplicity
-	for i := 0; i < 10; i++ {
-		visited_word := new(word.Word)
-		visited_word.Init(8)     // 8 bits for bool
-		visited_word.SetValue(0) // Initialize all visited flags to false
-		byte_stream.Merge(visited_word.ToByteStream())
-	}
-
-	// Add padding to align to 32-bit boundary (10 bytes + 6 padding = 16 bytes)
-	for i := 0; i < 6; i++ {
-		padding_byte := new(word.Word)
-		padding_byte.Init(8)
-		padding_byte.SetValue(0)
-		byte_stream.Merge(padding_byte.ToByteStream())
-	}
-
-	// Walker container: uint32_t array of node ids (container_size = 2)
-	container_1 := new(word.Word)
-	container_1.Init(32)
-	container_1.SetValue(1) // Placeholder for container ID
-	byte_stream.Merge(container_1.ToByteStream())
-
-	container_2 := new(word.Word)
-	container_2.Init(32)
-	container_2.SetValue(1) // Placeholder for container ID
-	byte_stream.Merge(container_2.ToByteStream())
-
-	// for i := int64(0); i < this.walker_container_size[dpu_id]; i++ {
-	// 	// Each container element is a uint32_t id field
-	// 	walker_id_word := new(word.Word)
-	// 	walker_id_word.Init(32)
-	// 	walker_id_word.SetValue(i) // IDs from 0 to 127
-	// 	byte_stream.Merge(walker_id_word.ToByteStream())
+	// if this.task_id[dpu_id] == -1 {
+	// 	// If task_id is -1, return empty byte stream
+	// 	fmt.Printf("Task ID for DPU %d is -1, returning empty byte stream.\n", dpu_id)
+	// 	return 0, byte_stream
 	// }
+
+	if (this.task_id[dpu_id] != -1) {
+	filename := fmt.Sprintf("task_bins/Task%d.bin", dpu_id)
+	fmt.Print("Task id for DPU ", dpu_id, " is ", this.task_id[dpu_id], " and reading from file ", filename, "\n")
+
+	f, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+
+	r := bufio.NewReader(f)
+	buf := make([]byte, 8)
+
+	for {
+			_, err := io.ReadFull(r, buf)
+			if err == io.EOF { break }
+			if err == io.ErrUnexpectedEOF { /* handle partial */ break }
+			if err != nil { log.Fatal(err) }
+
+			v := binary.LittleEndian.Uint64(buf)
+			word_value := new(word.Word)
+			word_value.Init(64)
+			word_value.SetValue(int64(v))
+			byte_stream.Merge(word_value.ToByteStream())
+			// use v
+	}
+	}
+	// Get the maximum size of all dpu inputs
+	max_size := int64(0)
+	for i := 0; i < this.num_dpus; i++ {
+		if this.input_size[i] > max_size {
+			max_size = this.input_size[i]
+		}
+	}
+	// Fill the byte stream with zeros until it reaches the maximum size
+	for byte_stream.Size() < max_size {
+		zero_word := new(word.Word)
+		zero_word.Init(64)
+		zero_word.SetValue(0)
+		byte_stream.Merge(zero_word.ToByteStream())
+	}
+	fmt.Print("Final byte stream size for DPU ", dpu_id, " is ", byte_stream.Size(), "\n")
 
 	return 0, byte_stream
 }

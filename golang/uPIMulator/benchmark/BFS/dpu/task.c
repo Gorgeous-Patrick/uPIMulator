@@ -1,7 +1,3 @@
-/*
-* Vector addition with multiple tasklets
-*
-*/
 #include <stdint.h>
 #include <stdio.h>
 #include <defs.h>
@@ -10,45 +6,26 @@
 #include <perfcounter.h>
 #include <barrier.h>
 
-#include "../support/common.h"
 // #define DEBUG
 
-__host dpu_arguments_t DPU_INPUT_ARGUMENTS;
+__host uint64_t task_id;
 
-void get_node(node_t *node, uint32_t node_id) {
+void get(void * buf, uint32_t start, uint32_t size) {
     // Read the node from MRAM
-    uint32_t addr = DPU_MRAM_HEAP_POINTER + node_id * aligned_malloc_size(sizeof(node_t));
-    mram_read((__mram_ptr void*)(addr), node, aligned_malloc_size(sizeof(node_t)));
+    uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
+    mram_read((__mram_ptr void*)(addr), buf, size);
 }
 
-void save_node(node_t *node, uint32_t node_id) {
-    // Write the node back to MRAM
-    uint32_t addr = DPU_MRAM_HEAP_POINTER + node_id * aligned_malloc_size(sizeof(node_t));
-    mram_write(node, (__mram_ptr void*)(addr), aligned_malloc_size(sizeof(node_t)));
-}
-
-void get_walker(walker_t *walker) {
-    // Read the walker from MRAM
-    uint32_t addr = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t));
-    mram_read((__mram_ptr void*)(addr), walker, aligned_malloc_size(sizeof(walker_t)));
-}
-
-void save_walker(walker_t *walker) {
+void save(void * buf, uint32_t start, uint32_t size) {
     // Write the walker back to MRAM
-    uint32_t addr = DPU_MRAM_HEAP_POINTER + DPU_INPUT_ARGUMENTS.num_nodes_assigned * aligned_malloc_size(sizeof(node_t));
-    mram_write(walker, (__mram_ptr void*)(addr), aligned_malloc_size(sizeof(walker_t)));
+    uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
+    mram_write(buf, (__mram_ptr void*)(addr), size);
+
 }
 
-node_t *node_buffer;
-walker_t *walker_buffer;
 #define MAX_CONTAINER_BUFFER_SIZE 128
 uint64_t container_buffer[MAX_CONTAINER_BUFFER_SIZE];
 uint64_t container_buffer_size = 0;
-void mem_init() {
-    // Initialize the memory for the container value buffer, only one uint32_t.
-    node_buffer = (node_t *) mem_alloc(aligned_malloc_size(sizeof(node_t)));
-    walker_buffer = (walker_t *) mem_alloc(aligned_malloc_size(sizeof(walker_t)));
-}
 
 void push_new_element_to_container(uint32_t id) {
     #ifdef DEBUG
@@ -71,33 +48,45 @@ void print_container() {
     printf("\n");
 }
 
-void run_ability(node_t *node, uint32_t node_id, walker_t *walker) {
-    // Placeholder for ability logic
-    #ifdef DEBUG
-    printf("Running ability for node %u\n", node->id);
-    printf("visited: %u\n", walker->visited[node->id]);
-    #endif
-    if (walker->visited[node->id] == 0) {
-        walker->visited[node->id] = 1;
-        if (node_id == 0) {
-            push_new_element_to_container(1);
-            push_new_element_to_container(2);
-            push_new_element_to_container(3);
-        } else if (node_id == 1) {
-            push_new_element_to_container(4);
-            push_new_element_to_container(5);
-        } else if (node_id == 2) {
-            push_new_element_to_container(6);
-        }
-    }
+typedef struct __BranchNode {
+uint64_t mid;
+} BranchNode;
+
+typedef struct __DataNode {
+uint64_t value; uint64_t index;
+} DataNode;
+
+
+
+typedef struct __bs {
+uint64_t value;
+} bs;
+
+
+void printnode_bs_DataNode (DataNode *node, uint32_t node_id, bs* walker) {
+
+  
 }
 
-extern int main_kernel1(void);
+void rundown_bs_BranchNode (BranchNode *node, uint32_t node_id, bs* walker) {
+
+    if (walker->value < node->mid) {
+      push_new_element_to_container(0);
+    } else {
+      push_new_element_to_container(1);
+    }
+  
+}
 
 
+void *node_buffer;
+void *walker_buffer;
+inline void mem_init() {
+    node_buffer = mem_alloc(16);
+    walker_buffer = mem_alloc(8);
+}
 
-
-int main(void) { 
+int main() { 
     // Kernel
     // return kernels[DPU_INPUT_ARGUMENTS.kernel](); 
     // Initialize memory
@@ -110,39 +99,119 @@ int main(void) {
         mem_reset(); // Reset the heap
     }
     mem_init();
-    return main_kernel1(); // Directly call the main_kernel1 function
-}
+    if (task_id == -1) {return 0;}
+    
+    if (task_id == 0) {
+    get(walker_buffer, 400, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 0, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 400, 8);
+    }
+    
+    if (task_id == 1) {
+    get(walker_buffer, 576, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 1, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 576, 8);
+    }
+    
+    if (task_id == 2) {
+    get(walker_buffer, 496, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 2, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 496, 8);
+    }
+    
+    if (task_id == 3) {
+    get(walker_buffer, 408, 8);
+    
+    get(node_buffer, 8, 8); 
+    rundown_bs_BranchNode(node_buffer, 3, walker_buffer);
+    save(node_buffer, 8, 8); 
+    
+    save(walker_buffer, 408, 8);
+    }
+    
+    if (task_id == 4) {
+    get(walker_buffer, 416, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 4, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 416, 8);
+    }
+    
+    if (task_id == 5) {
+    get(walker_buffer, 520, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 5, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 520, 8);
+    }
+    
+    if (task_id == 6) {
+    get(walker_buffer, 616, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 6, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 616, 8);
+    }
+    
+    if (task_id == 7) {
+    get(walker_buffer, 432, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 7, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 432, 8);
+    }
+    
+    if (task_id == 8) {
+    get(walker_buffer, 584, 8);
+    
+    get(node_buffer, 0, 8); 
+    rundown_bs_BranchNode(node_buffer, 15, walker_buffer);
+    save(node_buffer, 0, 8); 
+    
+    save(walker_buffer, 584, 8);
+    }
+    
+    if (task_id == 9) {
+    get(walker_buffer, 584, 8);
+    
+    get(node_buffer, 8, 8); 
+    rundown_bs_BranchNode(node_buffer, 16, walker_buffer);
+    save(node_buffer, 8, 8); 
+    
+    save(walker_buffer, 584, 8);
+    }
+    
+    if (task_id == 10) {
+    get(walker_buffer, 472, 8);
+    
+    get(node_buffer, 0, 16); 
+    printnode_bs_DataNode(node_buffer, 18, walker_buffer);
+    save(node_buffer, 0, 16); 
+    
+    save(walker_buffer, 472, 8);
+    }
+    
 
-int main_kernel1() {
-    // Barrier
-    // barrier_wait(&my_barrier);
-
-
-    // Get number of nodes and walkers assigned
-    uint32_t num_nodes_assigned = DPU_INPUT_ARGUMENTS.num_nodes_assigned;
-
-    #ifdef DEBUG
-    printf("num_nodes_assigned = %u\n", num_nodes_assigned);
-    #endif
-
-
-    int cnt = 0;
-    get_walker(walker_buffer);
-
-    get_node(node_buffer, 0);
-    run_ability(node_buffer, 0, walker_buffer);
-    save_node(node_buffer, 0);
-
-    get_node(node_buffer, 1);
-    run_ability(node_buffer, 1, walker_buffer);
-    save_node(node_buffer, 1);
-
-    get_node(node_buffer, 2);
-    run_ability(node_buffer, 2, walker_buffer);
-    save_node(node_buffer, 2);
-        
-
-    save_walker(walker_buffer);
     #ifdef DEBUG
     printf("Ending.\n");
     print_container();
