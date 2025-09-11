@@ -30,14 +30,20 @@ func (this *Bfs) Init(command_line_parser *misc.CommandLineParser) {
 
 	this.num_dpus = num_channels * num_ranks_per_channel * num_dpus_per_rank
 	this.num_tasklets = int(command_line_parser.IntParameter("num_tasklets"))
-	this.num_executions = 1
+	// Get the number of files in the task_bins directory
+	files, err := os.ReadDir("task_bins")
+	if err != nil {
+		log.Fatal(err)
+	}
+	num_files := len(files)
+	this.num_executions = num_files
 
 	// Initialize with simple constant values
 	// this.num_nodes_assigned = make([]int64, this.num_dpus)
 	// this.walker_container_size = make([]int64, this.num_dpus)
 	// this.num_edges_assigned = make([]int64, this.num_dpus)
-	this.task_id = make([]int64, this.num_dpus)
-	this.input_size = make([]int64, this.num_dpus)
+	this.task_id = make([]int64, this.num_executions)
+	this.input_size = make([]int64, this.num_executions)
 
 }
 
@@ -58,22 +64,22 @@ func (this *Bfs) InputDpuHost(execution int, dpu_id int) map[string]*encoding.By
 	dpu_task_id_byte_stream.Init()
 
 
-	filename := fmt.Sprintf("task_bins/Task%d.bin", dpu_id)
+	filename := fmt.Sprintf("task_bins/Task%d.bin", execution)
 	// If this name exists, assign the task id to dpu_id, otherwise assign -1.
 	if fileinfo, err := os.Stat(filename); err == nil {
-		this.task_id[dpu_id] = int64(dpu_id)
+		this.task_id[execution] = int64(execution)
 		// Get the size of the file and assign it to input_size for this DPU
-		this.input_size[dpu_id] = fileinfo.Size()
-		fmt.Print("Input size for DPU ", dpu_id, " is ", this.input_size[dpu_id], "\n")
+		this.input_size[execution] = fileinfo.Size()
+		fmt.Print("Input size for DPU ", execution, " is ", this.input_size[execution], "\n")
 	} else {
-		this.task_id[dpu_id] = -1
+		this.task_id[execution] = -1
 	}
 
 	// Send DPU task ID (constant value 0)
 
 	task_id_word := new(word.Word)
 	task_id_word.Init(64)
-	task_id_word.SetValue(this.task_id[dpu_id]) // Send actual task_id (200)
+	task_id_word.SetValue(this.task_id[execution]) // Send actual task_id (200)
 	dpu_task_id_byte_stream.Merge(task_id_word.ToByteStream())
 
 	dpu_host := make(map[string]*encoding.ByteStream, 0)
@@ -114,9 +120,9 @@ func (this *Bfs) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 	// 	return 0, byte_stream
 	// }
 
-	if (this.task_id[dpu_id] != -1) {
-	filename := fmt.Sprintf("task_bins/Task%d.bin", dpu_id)
-	fmt.Print("Task id for DPU ", dpu_id, " is ", this.task_id[dpu_id], " and reading from file ", filename, "\n")
+	if (this.task_id[execution] != -1) {
+	filename := fmt.Sprintf("task_bins/Task%d.bin", execution)
+	fmt.Print("Task id for DPU ", execution, " is ", this.task_id[execution], " and reading from file ", filename, "\n")
 
 	f, err := os.Open(filename)
 	if err != nil {
@@ -156,7 +162,7 @@ func (this *Bfs) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 		zero_word.SetValue(0)
 		byte_stream.Merge(zero_word.ToByteStream())
 	}
-	fmt.Print("Final byte stream size for DPU ", dpu_id, " is ", byte_stream.Size(), "\n")
+	fmt.Print("Final byte stream size for DPU ", execution, " is ", byte_stream.Size(), "\n")
 
 	return 0, byte_stream
 }
