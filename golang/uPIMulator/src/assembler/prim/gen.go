@@ -13,7 +13,7 @@ import (
 	"uPIMulator/src/misc"
 )
 
-type Bfs struct {
+type Gen struct {
 	num_dpus       int
 	num_tasklets   int
 	num_executions int
@@ -23,7 +23,7 @@ type Bfs struct {
 	input_size [] int64
 }
 
-func (this *Bfs) Init(command_line_parser *misc.CommandLineParser) {
+func (this *Gen) Init(command_line_parser *misc.CommandLineParser) {
 	num_channels := int(command_line_parser.IntParameter("num_channels"))
 	num_ranks_per_channel := int(command_line_parser.IntParameter("num_ranks_per_channel"))
 	num_dpus_per_rank := int(command_line_parser.IntParameter("num_dpus_per_rank"))
@@ -47,11 +47,11 @@ func (this *Bfs) Init(command_line_parser *misc.CommandLineParser) {
 
 }
 
-func (this *Bfs) NumExecutions() int {
+func (this *Gen) NumExecutions() int {
 	return this.num_executions
 }
 
-func (this *Bfs) InputDpuHost(execution int, dpu_id int) map[string]*encoding.ByteStream {
+func (this *Gen) InputDpuHost(execution int, dpu_id int) map[string]*encoding.ByteStream {
 	if execution >= this.num_executions {
 		err := errors.New("execution >= num executions")
 		panic(err)
@@ -89,7 +89,7 @@ func (this *Bfs) InputDpuHost(execution int, dpu_id int) map[string]*encoding.By
 	return dpu_host
 }
 
-func (this *Bfs) OutputDpuHost(execution int, dpu_id int) map[string]*encoding.ByteStream {
+func (this *Gen) OutputDpuHost(execution int, dpu_id int) map[string]*encoding.ByteStream {
 	if execution >= this.num_executions {
 		err := errors.New("execution >= num executions")
 		panic(err)
@@ -101,7 +101,7 @@ func (this *Bfs) OutputDpuHost(execution int, dpu_id int) map[string]*encoding.B
 	return make(map[string]*encoding.ByteStream, 0)
 }
 
-func (this *Bfs) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, *encoding.ByteStream) {
+func (this *Gen) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, *encoding.ByteStream) {
 	if execution >= this.num_executions {
 		err := errors.New("execution >= num executions")
 		panic(err)
@@ -167,7 +167,7 @@ func (this *Bfs) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 	return 0, byte_stream
 }
 
-func (this *Bfs) OutputDpuMramHeapPointerName(execution int, dpu_id int) (int64, *encoding.ByteStream) {
+func (this *Gen) OutputDpuMramHeapPointerName(execution int, dpu_id int) (int64, *encoding.ByteStream) {
 	if execution >= this.num_executions {
 		err := errors.New("execution >= num executions")
 		panic(err)

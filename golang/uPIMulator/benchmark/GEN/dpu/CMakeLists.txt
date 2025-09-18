@@ -14,4 +14,4 @@ set(CMAKE_C_FLAGS "-w -I/root/uPIMulator/benchmark/BFS/support -O2 -S -DNR_TASKL
 
 file(GLOB_RECURSE SRCS *.c)
 
-add_executable(BFS_device ${SRCS})
+add_executable(GEN_device ${SRCS})
