@@ -30,13 +30,7 @@ func (this *Gen) Init(command_line_parser *misc.CommandLineParser) {
 
 	this.num_dpus = num_channels * num_ranks_per_channel * num_dpus_per_rank
 	this.num_tasklets = int(command_line_parser.IntParameter("num_tasklets"))
-	// Get the number of files in the task_bins directory
-	files, err := os.ReadDir("task_bins")
-	if err != nil {
-		log.Fatal(err)
-	}
-	num_files := len(files)
-	this.num_executions = num_files
+	this.num_executions = 1
 
 	// Initialize with simple constant values
 	// this.num_nodes_assigned = make([]int64, this.num_dpus)
@@ -60,33 +54,7 @@ func (this *Gen) InputDpuHost(execution int, dpu_id int) map[string]*encoding.By
 		panic(err)
 	}
 
-	dpu_task_id_byte_stream := new(encoding.ByteStream)
-	dpu_task_id_byte_stream.Init()
-
-
-	filename := fmt.Sprintf("task_bins/Task%d.bin", execution)
-	// If this name exists, assign the task id to dpu_id, otherwise assign -1.
-	if fileinfo, err := os.Stat(filename); err == nil {
-		this.task_id[execution] = int64(execution)
-		// Get the size of the file and assign it to input_size for this DPU
-		this.input_size[execution] = fileinfo.Size()
-		fmt.Print("Input size for DPU ", execution, " is ", this.input_size[execution], "\n")
-	} else {
-		this.task_id[execution] = -1
-	}
-
-	// Send DPU task ID (constant value 0)
-
-	task_id_word := new(word.Word)
-	task_id_word.Init(64)
-	task_id_word.SetValue(this.task_id[execution]) // Send actual task_id (200)
-	dpu_task_id_byte_stream.Merge(task_id_word.ToByteStream())
-
-	dpu_host := make(map[string]*encoding.ByteStream, 0)
-	
-	dpu_host["task_id"] = dpu_task_id_byte_stream
-
-	return dpu_host
+	return make(map[string]*encoding.ByteStream, 0)
 }
 
 func (this *Gen) OutputDpuHost(execution int, dpu_id int) map[string]*encoding.ByteStream {
@@ -120,8 +88,7 @@ func (this *Gen) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 	// 	return 0, byte_stream
 	// }
 
-	if (this.task_id[execution] != -1) {
-	filename := fmt.Sprintf("task_bins/Task%d.bin", execution)
+	filename := "Task.bin"
 	fmt.Print("Task id for DPU ", execution, " is ", this.task_id[execution], " and reading from file ", filename, "\n")
 
 	f, err := os.Open(filename)
@@ -147,23 +114,6 @@ func (this *Gen) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 			byte_stream.Merge(word_value.ToByteStream())
 			// use v
 	}
-	}
-	// Get the maximum size of all dpu inputs
-	max_size := int64(0)
-	for i := 0; i < this.num_dpus; i++ {
-		if this.input_size[i] > max_size {
-			max_size = this.input_size[i]
-		}
-	}
-	// Fill the byte stream with zeros until it reaches the maximum size
-	for byte_stream.Size() < max_size {
-		zero_word := new(word.Word)
-		zero_word.Init(64)
-		zero_word.SetValue(0)
-		byte_stream.Merge(zero_word.ToByteStream())
-	}
-	fmt.Print("Final byte stream size for DPU ", execution, " is ", byte_stream.Size(), "\n")
-
 	return 0, byte_stream
 }
 

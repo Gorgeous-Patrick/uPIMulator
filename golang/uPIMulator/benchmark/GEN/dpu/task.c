@@ -8,8 +8,6 @@
 
 // #define DEBUG
 
-__host uint64_t task_id;
-
 void get(void * buf, uint32_t start, uint32_t size) {
     // Read the node from MRAM
     uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
@@ -99,118 +97,13 @@ int main() {
         mem_reset(); // Reset the heap
     }
     mem_init();
-    if (task_id == -1) {return 0;}
-    
-    if (task_id == 0) {
-    get(walker_buffer, 496, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 0, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 496, 8);
-    }
-    
-    if (task_id == 1) {
-    get(walker_buffer, 432, 8);
+    get(walker_buffer, 472, 8);
     
     get(node_buffer, 0, 8); 
     rundown_bs_BranchNode(node_buffer, 1, walker_buffer);
     save(node_buffer, 0, 8); 
     
-    save(walker_buffer, 432, 8);
-    }
-    
-    if (task_id == 2) {
-    get(walker_buffer, 504, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 2, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 504, 8);
-    }
-    
-    if (task_id == 3) {
-    get(walker_buffer, 400, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 3, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 400, 8);
-    }
-    
-    if (task_id == 4) {
-    get(walker_buffer, 480, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 4, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 480, 8);
-    }
-    
-    if (task_id == 5) {
-    get(walker_buffer, 560, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 5, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 560, 8);
-    }
-    
-    if (task_id == 6) {
-    get(walker_buffer, 584, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 6, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 584, 8);
-    }
-    
-    if (task_id == 7) {
-    get(walker_buffer, 672, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 7, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 672, 8);
-    }
-    
-    if (task_id == 8) {
-    get(walker_buffer, 528, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 15, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 528, 8);
-    }
-    
-    if (task_id == 9) {
-    get(walker_buffer, 392, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 16, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 392, 8);
-    }
-    
-    if (task_id == 10) {
-    get(walker_buffer, 416, 8);
-    
-    get(node_buffer, 0, 16); 
-    printnode_bs_DataNode(node_buffer, 18, walker_buffer);
-    save(node_buffer, 0, 16); 
-    
-    save(walker_buffer, 416, 8);
-    }
-    
+    save(walker_buffer, 472, 8);
 
     #ifdef DEBUG
     printf("Ending.\n");
