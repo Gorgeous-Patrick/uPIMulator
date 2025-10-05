@@ -30,7 +30,17 @@ func (this *Gen) Init(command_line_parser *misc.CommandLineParser) {
 
 	this.num_dpus = num_channels * num_ranks_per_channel * num_dpus_per_rank
 	this.num_tasklets = int(command_line_parser.IntParameter("num_tasklets"))
-	this.num_executions = 1
+	// Determine the number of executions based on the number of folders in input_bins.
+	this.num_executions = 0
+	for {
+		folder_name := fmt.Sprintf("input_bins/execution_%d", this.num_executions)
+		if _, err := os.Stat(folder_name); os.IsNotExist(err) {
+			break
+		}
+		this.num_executions++
+	}
+
+	fmt.Printf("Number of executions determined: %d\n", this.num_executions)
 
 	// Initialize with simple constant values
 	// this.num_nodes_assigned = make([]int64, this.num_dpus)
@@ -88,7 +98,7 @@ func (this *Gen) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 	// 	return 0, byte_stream
 	// }
 
-	filename := "Task.bin"
+	filename := "input_bins/execution_" + fmt.Sprint(execution) + "/core_" + fmt.Sprint(dpu_id) + ".bin"
 	fmt.Print("Task id for DPU ", execution, " is ", this.task_id[execution], " and reading from file ", filename, "\n")
 
 	f, err := os.Open(filename)

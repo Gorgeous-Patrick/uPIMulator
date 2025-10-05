@@ -3,7 +3,6 @@ package compiler
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"uPIMulator/src/misc"
 )
@@ -35,9 +34,7 @@ func (this *Compiler) Init(command_line_parser *misc.CommandLineParser) {
 }
 
 func (this *Compiler) Build() {
-	docker_dirpath := filepath.Join(this.root_dirpath, "docker")
-
-	command := exec.Command("docker", "build", "-t", "bongjoonhyun/upimulator", docker_dirpath)
+	command := exec.Command("docker", "pull", "patricklidockerhub/upimulator")
 
 	err := command.Run()
 

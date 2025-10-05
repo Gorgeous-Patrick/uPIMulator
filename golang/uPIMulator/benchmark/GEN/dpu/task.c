@@ -8,43 +8,19 @@
 
 // #define DEBUG
 
-void get(void * buf, uint32_t start, uint32_t size) {
-    // Read the node from MRAM
-    uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
-    mram_read((__mram_ptr void*)(addr), buf, size);
-}
+void *node_buffer;
+void *walker_buffer;
+typedef struct __Metadata {
+  uint64_t extra_mram_space; uint64_t walker_num; uint64_t walker_container_ptrs[12]; uint64_t trace_lengths[12];
+} Metadata;
 
-void save(void * buf, uint32_t start, uint32_t size) {
-    // Write the walker back to MRAM
-    uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
-    mram_write(buf, (__mram_ptr void*)(addr), size);
 
-}
 
-#define MAX_CONTAINER_BUFFER_SIZE 128
-uint64_t container_buffer[MAX_CONTAINER_BUFFER_SIZE];
-uint64_t container_buffer_size = 0;
+typedef struct __ContainerObject{
+uint64_t walker_ptr; uint64_t walker_size; uint64_t node_ptr; uint64_t node_size; uint64_t edge_num; uint64_t func_call;
+} ContainerObject;
 
-void push_new_element_to_container(uint32_t id) {
-    #ifdef DEBUG
-    printf("Pushing new element to container: %u\n", id);
-    #endif
-    if (container_buffer_size < MAX_CONTAINER_BUFFER_SIZE) {
-        container_buffer[container_buffer_size++] = id;
-    } else {
-        #ifdef DEBUG
-        printf("Container buffer overflow, cannot push new element: %u\n", id);
-        #endif
-    }
-}
 
-void print_container() {
-    printf("Container contents: ");
-    for (uint32_t i = 0; i < container_buffer_size; i++) {
-        printf("%lu ", container_buffer[i]);
-    }
-    printf("\n");
-}
 
 typedef struct __BranchNode {
 uint64_t mid;
@@ -59,6 +35,23 @@ uint64_t value; uint64_t index;
 typedef struct __bs {
 uint64_t value;
 } bs;
+
+
+#define MAX_CONTAINER_BUFFER_SIZE 128
+uint64_t container_buffer[MAX_CONTAINER_BUFFER_SIZE];
+uint64_t container_buffer_size = 0;
+void push_new_element_to_container(uint32_t id) {
+    #ifdef DEBUG
+    printf("Pushing new element to container: %u\n", id);
+    #endif
+    if (container_buffer_size < MAX_CONTAINER_BUFFER_SIZE) {
+        container_buffer[0] = id;
+    } else {
+        #ifdef DEBUG
+        printf("Container buffer overflow, cannot push new element: %u\n", id);
+        #endif
+    }
+}
 
 
 void printnode_bs_DataNode (DataNode *node, uint32_t node_id, bs* walker) {
@@ -77,38 +70,76 @@ void rundown_bs_BranchNode (BranchNode *node, uint32_t node_id, bs* walker) {
 }
 
 
-void *node_buffer;
-void *walker_buffer;
+void run_on_node(uint64_t walker_ptr, uint64_t node_ptr, uint64_t edge_num, uint64_t func_call) {
+  
+  if (func_call == 0) {
+    printnode_bs_DataNode(node_ptr, 0, walker_ptr);
+  }
+  
+  if (func_call == 1) {
+    rundown_bs_BranchNode(node_ptr, 0, walker_ptr);
+  }
+  
+}
+
 inline void mem_init() {
     node_buffer = mem_alloc(16);
     walker_buffer = mem_alloc(8);
 }
+void get(void * buf, uint32_t start, uint32_t size) {
+    // Read the node from MRAM
+    uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
+    mram_read((__mram_ptr void*)(addr), buf, size);
+}
 
-int main() { 
-    // Kernel
-    // return kernels[DPU_INPUT_ARGUMENTS.kernel](); 
-    // Initialize memory
-    unsigned int tasklet_id = me();
+void save(void * buf, uint32_t start, uint32_t size) {
+    // Write the walker back to MRAM
+    uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
+    mram_write(buf, (__mram_ptr void*)(addr), size);
+}
 
-    #ifdef DEBUG
-    printf("tasklet_id = %u\n", tasklet_id);
-    #endif
-    if (tasklet_id == 0){ // Initialize once the cycle counter
-        mem_reset(); // Reset the heap
+
+void run_thread(uint64_t walker_container_ptr, uint64_t trace_length) {
+    ContainerObject container_obj;
+    for (uint64_t i = 0; i < trace_length; i++) {
+        get(&container_obj, walker_container_ptr + i * sizeof(ContainerObject), sizeof(ContainerObject));
+        #ifdef DEBUG
+        printf("Container Object %lu: Ability type: %lu, Node id: %lu, Walker id: %lu\n", i, container_obj.ability_type, container_obj.node_id, container_obj.walker_id);
+        #endif
+        // Load node
+        get(node_buffer, container_obj.node_ptr, container_obj.node_size);
+        // Load walker
+        get(walker_buffer, container_obj.walker_ptr, container_obj.walker_size);
+        // Run on node
+        run_on_node(walker_buffer, node_buffer, container_obj.edge_num, container_obj.func_call);
+        // Save walker
+        save(walker_buffer, container_obj.walker_ptr, container_obj.walker_size);
+        // Save node
+        save(node_buffer, container_obj.node_ptr, container_obj.node_size);
     }
-    mem_init();
-    get(walker_buffer, 472, 8);
-    
-    get(node_buffer, 0, 8); 
-    rundown_bs_BranchNode(node_buffer, 1, walker_buffer);
-    save(node_buffer, 0, 8); 
-    
-    save(walker_buffer, 472, 8);
+}
+BARRIER_INIT(my_barrier, NR_TASKLETS);
 
+int main() {
+    uint64_t walker_id = me();
+    if (walker_id == 0) {
+        mem_init();
+    }
+    // Barrier
+    barrier_wait(&my_barrier);
+    Metadata metadata;
+    get(&metadata, DPU_MRAM_HEAP_POINTER, sizeof(Metadata));
     #ifdef DEBUG
-    printf("Ending.\n");
-    print_container();
+    printf("DPU Tasklet %u: Walker ptr: %lu, Walker size: %lu, Node size: %lu, Edge num: %lu\n", walker_id, metadata.walker_ptr, metadata.walker_size, metadata.node_size, metadata.edge_num);
     #endif
-    // mram_write(&sum, (__mram_ptr void*)(DPU_MRAM_HEAP_POINTER), aligned_malloc_size(sizeof(uint32_t)));
-    return 0;
+    if (walker_id >= metadata.walker_num) {
+        return 0;
+    }
+
+    uint64_t walker_container_ptr = metadata.walker_container_ptrs[walker_id];
+    uint64_t trace_length = metadata.trace_lengths[walker_id];
+    #ifdef DEBUG
+    printf("DPU Tasklet %u: Walker container ptr: %lu, Trace length: %lu\n", walker_id, walker_container_ptr, trace_length);
+    #endif
+
 }
