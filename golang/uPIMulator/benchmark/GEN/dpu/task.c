@@ -6,7 +6,7 @@
 #include <perfcounter.h>
 #include <barrier.h>
 
-// #define DEBUG
+#define DEBUG
 
 void *node_buffer;
 void *walker_buffer;
@@ -35,6 +35,7 @@ uint64_t value; uint64_t index;
 typedef struct __bs {
 uint64_t value;
 } bs;
+
 
 
 #define MAX_CONTAINER_BUFFER_SIZE 128
@@ -82,10 +83,11 @@ void run_on_node(uint64_t walker_ptr, uint64_t node_ptr, uint64_t edge_num, uint
   
 }
 
-inline void mem_init() {
+void mem_malloc() {
     node_buffer = mem_alloc(16);
     walker_buffer = mem_alloc(8);
 }
+
 void get(void * buf, uint32_t start, uint32_t size) {
     // Read the node from MRAM
     uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
@@ -104,7 +106,7 @@ void run_thread(uint64_t walker_container_ptr, uint64_t trace_length) {
     for (uint64_t i = 0; i < trace_length; i++) {
         get(&container_obj, walker_container_ptr + i * sizeof(ContainerObject), sizeof(ContainerObject));
         #ifdef DEBUG
-        printf("Container Object %lu: Ability type: %lu, Node id: %lu, Walker id: %lu\n", i, container_obj.ability_type, container_obj.node_id, container_obj.walker_id);
+        // printf("Container Object %lu: Ability type: %lu, Node id: %lu, Walker id: %lu\n", i, container_obj.ability_type, container_obj.node_id, container_obj.walker_id);
         #endif
         // Load node
         get(node_buffer, container_obj.node_ptr, container_obj.node_size);
@@ -119,18 +121,19 @@ void run_thread(uint64_t walker_container_ptr, uint64_t trace_length) {
     }
 }
 BARRIER_INIT(my_barrier, NR_TASKLETS);
-
 int main() {
     uint64_t walker_id = me();
+    printf("DPU Tasklet ID: %llu\n", walker_id);
     if (walker_id == 0) {
-        mem_init();
+      mem_reset();
+        mem_malloc();
     }
     // Barrier
     barrier_wait(&my_barrier);
     Metadata metadata;
     get(&metadata, DPU_MRAM_HEAP_POINTER, sizeof(Metadata));
     #ifdef DEBUG
-    printf("DPU Tasklet %u: Walker ptr: %lu, Walker size: %lu, Node size: %lu, Edge num: %lu\n", walker_id, metadata.walker_ptr, metadata.walker_size, metadata.node_size, metadata.edge_num);
+    printf("DPU Tasklet %u: Metadata - Extra MRAM space: %lu, Walker num: %lu\n", walker_id, metadata.extra_mram_space, metadata.walker_num);
     #endif
     if (walker_id >= metadata.walker_num) {
         return 0;
