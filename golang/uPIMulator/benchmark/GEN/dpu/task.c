@@ -57,10 +57,15 @@ void push_new_element_to_container(uint32_t id) {
 
 void printnode_bs_DataNode (DataNode *node, uint32_t node_id, bs* walker) {
 
-  
+  #ifdef DEBUG
+  printf("DPU Tasklet %u: DataNode - Value: %lu, Index: %lu\n", me(), node->value, node->index);
+  #endif
 }
 
 void rundown_bs_BranchNode (BranchNode *node, uint32_t node_id, bs* walker) {
+  #ifdef DEBUG
+  printf("DPU Tasklet %u: BranchNode - Mid: %lu\n", me(), node->mid);
+  #endif
 
     if (walker->value < node->mid) {
       push_new_element_to_container(0);
@@ -106,7 +111,7 @@ void run_thread(uint64_t walker_container_ptr, uint64_t trace_length) {
     for (uint64_t i = 0; i < trace_length; i++) {
         get(&container_obj, walker_container_ptr + i * sizeof(ContainerObject), sizeof(ContainerObject));
         #ifdef DEBUG
-        // printf("Container Object %lu: Ability type: %lu, Node id: %lu, Walker id: %lu\n", i, container_obj.ability_type, container_obj.node_id, container_obj.walker_id);
+        printf("DPU Tasklet %u: Container Object - Walker ptr: %lu, Walker size: %lu, Node ptr: %lu, Node size: %lu, Edge num: %lu, Func call: %lu\n", me(), container_obj.walker_ptr, container_obj.walker_size, container_obj.node_ptr, container_obj.node_size, container_obj.edge_num, container_obj.func_call);
         #endif
         // Load node
         get(node_buffer, container_obj.node_ptr, container_obj.node_size);
@@ -131,7 +136,7 @@ int main() {
     // Barrier
     barrier_wait(&my_barrier);
     Metadata metadata;
-    get(&metadata, DPU_MRAM_HEAP_POINTER, sizeof(Metadata));
+    get(&metadata, 0, sizeof(Metadata));
     #ifdef DEBUG
     printf("DPU Tasklet %u: Metadata - Extra MRAM space: %lu, Walker num: %lu\n", walker_id, metadata.extra_mram_space, metadata.walker_num);
     #endif
@@ -144,5 +149,6 @@ int main() {
     #ifdef DEBUG
     printf("DPU Tasklet %u: Walker container ptr: %lu, Trace length: %lu\n", walker_id, walker_container_ptr, trace_length);
     #endif
+    run_thread(walker_container_ptr, trace_length);
 
 }
