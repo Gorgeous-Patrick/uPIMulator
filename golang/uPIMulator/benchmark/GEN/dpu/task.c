@@ -37,7 +37,6 @@ uint64_t value;
 } bs;
 
 
-
 #define MAX_CONTAINER_BUFFER_SIZE 128
 uint64_t container_buffer[MAX_CONTAINER_BUFFER_SIZE];
 uint64_t container_buffer_size = 0;
@@ -60,9 +59,12 @@ void printnode_bs_DataNode (DataNode *node, uint32_t node_id, bs* walker) {
   #ifdef DEBUG
   printf("DPU Tasklet %u: DataNode - Value: %lu, Index: %lu\n", me(), node->value, node->index);
   #endif
+
+  
 }
 
 void rundown_bs_BranchNode (BranchNode *node, uint32_t node_id, bs* walker) {
+
   #ifdef DEBUG
   printf("DPU Tasklet %u: BranchNode - Mid: %lu\n", me(), node->mid);
   #endif
@@ -92,7 +94,6 @@ void mem_malloc() {
     node_buffer = mem_alloc(16);
     walker_buffer = mem_alloc(8);
 }
-
 void get(void * buf, uint32_t start, uint32_t size) {
     // Read the node from MRAM
     uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
@@ -126,29 +127,23 @@ void run_thread(uint64_t walker_container_ptr, uint64_t trace_length) {
     }
 }
 BARRIER_INIT(my_barrier, NR_TASKLETS);
+
 int main() {
     uint64_t walker_id = me();
-    printf("DPU Tasklet ID: %llu\n", walker_id);
     if (walker_id == 0) {
-      mem_reset();
+        mem_reset();
         mem_malloc();
     }
     // Barrier
     barrier_wait(&my_barrier);
     Metadata metadata;
     get(&metadata, 0, sizeof(Metadata));
-    #ifdef DEBUG
-    printf("DPU Tasklet %u: Metadata - Extra MRAM space: %lu, Walker num: %lu\n", walker_id, metadata.extra_mram_space, metadata.walker_num);
-    #endif
     if (walker_id >= metadata.walker_num) {
         return 0;
     }
 
     uint64_t walker_container_ptr = metadata.walker_container_ptrs[walker_id];
     uint64_t trace_length = metadata.trace_lengths[walker_id];
-    #ifdef DEBUG
-    printf("DPU Tasklet %u: Walker container ptr: %lu, Trace length: %lu\n", walker_id, walker_container_ptr, trace_length);
-    #endif
     run_thread(walker_container_ptr, trace_length);
 
 }
