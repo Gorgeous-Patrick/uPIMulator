@@ -6,7 +6,7 @@
 #include <perfcounter.h>
 #include <barrier.h>
 
-#define DEBUG
+// #define DEBUG
 
 void *node_buffer;
 void *walker_buffer;

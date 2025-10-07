@@ -124,6 +124,34 @@ func (this *Gen) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 			byte_stream.Merge(word_value.ToByteStream())
 			// use v
 	}
+	// Iterate over all binary files of this execution to find the maximum input size
+	max_input_size := int64(0)
+	for dpu_index := 0; dpu_index < this.num_dpus; dpu_index++ {
+		filepath := fmt.Sprintf("input_bins/execution_%d/core_%d.bin", execution, dpu_index)
+		file_info, err := os.Stat(filepath)
+		if err != nil {
+			log.Fatal(err)
+			panic(err)
+		}
+		if file_info.Size() > max_input_size {
+			max_input_size = file_info.Size()
+		}
+	}
+	// Add padding zeros to the end of the byte stream to match the maximum input size
+	padding_size := max_input_size - int64(byte_stream.Size())
+	for padding_size > 0 {
+		word_value := new(word.Word)
+		word_value.Init(64)
+		word_value.SetValue(0)
+		// Each padding is 8 bytes (size of int64)
+		byte_stream.Merge(word_value.ToByteStream())
+		padding_size -= 8
+	}
+	if int64(byte_stream.Size()) != max_input_size {
+		err := errors.New("byte stream size does not match maximum input size after padding")
+		panic(err)
+	}
+
 	return 0, byte_stream
 }
 
