@@ -197,15 +197,114 @@ func (this *Linker) HasResolved() bool {
 func (this *Linker) ResolveSymbols() {
 	this.executable.AddSdkRelocatable(this.sdk_relocatables["misc.crt0"])
 
+	iter := 0
 	for !this.HasResolved() {
-		for unresolved_symbol, _ := range this.executable.Liveness().UnresolvedSymbols() {
-			if !this.linker_script.HasLinkerConstant(unresolved_symbol) {
-				for _, sdk_relocatable := range this.sdk_relocatables {
-					if _, found := sdk_relocatable.Liveness().GlobalSymbols()[unresolved_symbol]; found {
+		iter++
+		madeProgress := false
+
+		unresolved := this.executable.Liveness().UnresolvedSymbols()
+		fmt.Printf("ResolveSymbols: iteration=%d unresolved_count=%d\n", iter, len(unresolved))
+
+		for unresolved_symbol := range unresolved {
+			fmt.Println("Resolving symbol:", unresolved_symbol)
+			if this.linker_script.HasLinkerConstant(unresolved_symbol) {
+				continue
+			}
+
+			suffix := "." + unresolved_symbol
+
+			for sdk_name, sdk_relocatable := range this.sdk_relocatables {
+				// exact global match
+				if _, found := sdk_relocatable.Liveness().GlobalSymbols()[unresolved_symbol]; found {
+					fmt.Printf("  -> adding relocatable %s to satisfy %s (global)\n", sdk_name, unresolved_symbol)
+					this.executable.AddSdkRelocatable(sdk_relocatable)
+					madeProgress = true
+					continue
+				}
+
+				// exact def match
+				if _, found := sdk_relocatable.Liveness().Defs()[unresolved_symbol]; found {
+					fmt.Printf("  -> adding relocatable %s to satisfy %s (def)\n", sdk_name, unresolved_symbol)
+					this.executable.AddSdkRelocatable(sdk_relocatable)
+					madeProgress = true
+					continue
+				}
+
+				// suffix match for renamed/local symbols (e.g., misc.crt0.STACK_SIZE_TASKLET_0)
+				added := false
+				for defName := range sdk_relocatable.Liveness().Defs() {
+					if len(defName) > len(suffix) && defName[len(defName)-len(suffix):] == suffix {
+						fmt.Printf("  -> adding relocatable %s to satisfy %s (def-suffix %s)\n", sdk_name, unresolved_symbol, defName)
 						this.executable.AddSdkRelocatable(sdk_relocatable)
+						madeProgress = true
+						added = true
+						break
+					}
+				}
+				if added {
+					continue
+				}
+				for gName := range sdk_relocatable.Liveness().GlobalSymbols() {
+					if len(gName) > len(suffix) && gName[len(gName)-len(suffix):] == suffix {
+						fmt.Printf("  -> adding relocatable %s to satisfy %s (global-suffix %s)\n", sdk_name, unresolved_symbol, gName)
+						this.executable.AddSdkRelocatable(sdk_relocatable)
+						madeProgress = true
+						break
 					}
 				}
 			}
+		}
+
+		if !madeProgress {
+			fmt.Println("ResolveSymbols: no progress made while resolving symbols. Dumping diagnostics:")
+			fmt.Println("Unresolved symbols:")
+			for s := range this.executable.Liveness().UnresolvedSymbols() {
+				fmt.Println("  ", s)
+			}
+
+			fmt.Println("SDK relocatables and their global symbol counts:")
+			for sdk_name, sdk_relocatable := range this.sdk_relocatables {
+				fmt.Printf("  %s: %d globals, %d defs\n", sdk_name, len(sdk_relocatable.Liveness().GlobalSymbols()), len(sdk_relocatable.Liveness().Defs()))
+			}
+
+			// detailed lookup for unresolved non-constants
+			fmt.Println("Detailed per-symbol lookup (non-constant unresolved symbols):")
+			for s := range this.executable.Liveness().UnresolvedSymbols() {
+				if this.linker_script.HasLinkerConstant(s) {
+					continue
+				}
+				foundAny := false
+				fmt.Printf("  %s ->\n", s)
+				for sdk_name, sdk_relocatable := range this.sdk_relocatables {
+					if _, found := sdk_relocatable.Liveness().GlobalSymbols()[s]; found {
+						fmt.Printf("    found in %s (global)\n", sdk_name)
+						foundAny = true
+					}
+					if _, found := sdk_relocatable.Liveness().Defs()[s]; found {
+						fmt.Printf("    found in %s (def)\n", sdk_name)
+						foundAny = true
+					}
+					// suffix checks
+					suffix := "." + s
+					for defName := range sdk_relocatable.Liveness().Defs() {
+						if len(defName) > len(suffix) && defName[len(defName)-len(suffix):] == suffix {
+							fmt.Printf("    found-suffix in %s: %s\n", sdk_name, defName)
+							foundAny = true
+						}
+					}
+					for gName := range sdk_relocatable.Liveness().GlobalSymbols() {
+						if len(gName) > len(suffix) && gName[len(gName)-len(suffix):] == suffix {
+							fmt.Printf("    found-global-suffix in %s: %s\n", sdk_name, gName)
+							foundAny = true
+						}
+					}
+				}
+				if !foundAny {
+					fmt.Printf("    none\n")
+				}
+			}
+
+			panic("ResolveSymbols: cannot make progress resolving symbols")
 		}
 	}
 }

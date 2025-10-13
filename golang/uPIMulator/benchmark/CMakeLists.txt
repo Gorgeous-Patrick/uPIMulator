@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(benchmark)
 
-# add_subdirectory(BS)
+add_subdirectory(BS)
 add_subdirectory(GEN)
 # add_subdirectory(GEMV)
 # add_subdirectory(HST-L)

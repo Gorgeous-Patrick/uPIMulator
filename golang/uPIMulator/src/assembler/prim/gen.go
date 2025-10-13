@@ -1,12 +1,12 @@
 package prim
 
 import (
-	"bufio"
-	"encoding/binary"
+	// "bufio"
+	// "encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"log"
+	// "io"
+	// "log"
 	"os"
 	"uPIMulator/src/abi/encoding"
 	"uPIMulator/src/abi/word"
@@ -88,69 +88,77 @@ func (this *Gen) InputDpuMramHeapPointerName(execution int, dpu_id int) (int64, 
 		panic(err)
 	}
 
-	// Create node data for MRAM
+	// // Create node data for MRAM
+	// byte_stream := new(encoding.ByteStream)
+	// byte_stream.Init()
+
+	// // if this.task_id[dpu_id] == -1 {
+	// // 	// If task_id is -1, return empty byte stream
+	// // 	fmt.Printf("Task ID for DPU %d is -1, returning empty byte stream.\n", dpu_id)
+	// // 	return 0, byte_stream
+	// // }
+
+	// filename := "input_bins/execution_" + fmt.Sprint(execution) + "/core_" + fmt.Sprint(dpu_id) + ".bin"
+	// fmt.Print("Task id for DPU ", execution, " is ", this.task_id[execution], " and reading from file ", filename, "\n")
+
+	// f, err := os.Open(filename)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer f.Close()
+
+
+	// r := bufio.NewReader(f)
+	// buf := make([]byte, 8)
+
+	// for {
+	// 		_, err := io.ReadFull(r, buf)
+	// 		if err == io.EOF { break }
+	// 		if err == io.ErrUnexpectedEOF { /* handle partial */ break }
+	// 		if err != nil { log.Fatal(err) }
+
+	// 		v := binary.LittleEndian.Uint64(buf)
+	// 		word_value := new(word.Word)
+	// 		word_value.Init(64)
+	// 		word_value.SetValue(int64(v))
+	// 		byte_stream.Merge(word_value.ToByteStream())
+	// 		// use v
+	// }
+	// // Iterate over all binary files of this execution to find the maximum input size
+	// max_input_size := int64(0)
+	// for dpu_index := 0; dpu_index < this.num_dpus; dpu_index++ {
+	// 	filepath := fmt.Sprintf("input_bins/execution_%d/core_%d.bin", execution, dpu_index)
+	// 	file_info, err := os.Stat(filepath)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 		panic(err)
+	// 	}
+	// 	if file_info.Size() > max_input_size {
+	// 		max_input_size = file_info.Size()
+	// 	}
+	// }
+	// // Add padding zeros to the end of the byte stream to match the maximum input size
+	// padding_size := max_input_size - int64(byte_stream.Size())
+	// for padding_size > 0 {
+	// 	word_value := new(word.Word)
+	// 	word_value.Init(64)
+	// 	word_value.SetValue(0)
+	// 	// Each padding is 8 bytes (size of int64)
+	// 	byte_stream.Merge(word_value.ToByteStream())
+	// 	padding_size -= 8
+	// }
+	// Test: start from an empty byte stream.
 	byte_stream := new(encoding.ByteStream)
 	byte_stream.Init()
+	dpu_id_word := new(word.Word)
+	dpu_id_word.Init(64)
+	dpu_id_word.SetValue(int64(dpu_id))
+	byte_stream.Merge(dpu_id_word.ToByteStream())
 
-	// if this.task_id[dpu_id] == -1 {
-	// 	// If task_id is -1, return empty byte stream
-	// 	fmt.Printf("Task ID for DPU %d is -1, returning empty byte stream.\n", dpu_id)
-	// 	return 0, byte_stream
+	// if int64(byte_stream.Size()) != max_input_size {
+	// 	err := errors.New("byte stream size does not match maximum input size after padding")
+	// 	panic(err)
 	// }
-
-	filename := "input_bins/execution_" + fmt.Sprint(execution) + "/core_" + fmt.Sprint(dpu_id) + ".bin"
-	fmt.Print("Task id for DPU ", execution, " is ", this.task_id[execution], " and reading from file ", filename, "\n")
-
-	f, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-
-	r := bufio.NewReader(f)
-	buf := make([]byte, 8)
-
-	for {
-			_, err := io.ReadFull(r, buf)
-			if err == io.EOF { break }
-			if err == io.ErrUnexpectedEOF { /* handle partial */ break }
-			if err != nil { log.Fatal(err) }
-
-			v := binary.LittleEndian.Uint64(buf)
-			word_value := new(word.Word)
-			word_value.Init(64)
-			word_value.SetValue(int64(v))
-			byte_stream.Merge(word_value.ToByteStream())
-			// use v
-	}
-	// Iterate over all binary files of this execution to find the maximum input size
-	max_input_size := int64(0)
-	for dpu_index := 0; dpu_index < this.num_dpus; dpu_index++ {
-		filepath := fmt.Sprintf("input_bins/execution_%d/core_%d.bin", execution, dpu_index)
-		file_info, err := os.Stat(filepath)
-		if err != nil {
-			log.Fatal(err)
-			panic(err)
-		}
-		if file_info.Size() > max_input_size {
-			max_input_size = file_info.Size()
-		}
-	}
-	// Add padding zeros to the end of the byte stream to match the maximum input size
-	padding_size := max_input_size - int64(byte_stream.Size())
-	for padding_size > 0 {
-		word_value := new(word.Word)
-		word_value.Init(64)
-		word_value.SetValue(0)
-		// Each padding is 8 bytes (size of int64)
-		byte_stream.Merge(word_value.ToByteStream())
-		padding_size -= 8
-	}
-	if int64(byte_stream.Size()) != max_input_size {
-		err := errors.New("byte stream size does not match maximum input size after padding")
-		panic(err)
-	}
 
 	return 0, byte_stream
 }
