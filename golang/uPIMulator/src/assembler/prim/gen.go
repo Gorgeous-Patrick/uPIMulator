@@ -39,6 +39,7 @@ func (this *Gen) Init(command_line_parser *misc.CommandLineParser) {
 		}
 		this.num_executions++
 	}
+	this.num_executions = 1
 
 	fmt.Printf("Number of executions determined: %d\n", this.num_executions)
 
@@ -176,12 +177,17 @@ func (this *Gen) OutputDpuMramHeapPointerName(execution int, dpu_id int) (int64,
 	byte_stream := new(encoding.ByteStream)
 	byte_stream.Init()
 
-	// The task.c writes container_size (which is 2) to MRAM
+	// // The task.c writes container_size (which is 2) to MRAM
 	sum_word := new(word.Word)
-	sum_word.Init(32)
-	sum_word.SetValue(0) // container_size value from DPU_INPUT_ARGUMENTS
+	sum_word.Init(64)
+	sum := int64(0)
+	for i := int64(0); i < int64(dpu_id); i++ {
+		sum += int64(dpu_id);
+	}
+
+	sum_word.SetValue(int64(dpu_id * (dpu_id - 1) / 2)) // container_size value from DPU_INPUT_ARGUMENTS
 	byte_stream.Merge(sum_word.ToByteStream())
 
 	// Return offset 0 - DPU writes result at the beginning of MRAM
-	return 0, byte_stream
+	return 8, byte_stream
 }

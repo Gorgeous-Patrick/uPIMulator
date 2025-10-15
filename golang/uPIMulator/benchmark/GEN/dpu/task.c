@@ -3,6 +3,7 @@
 #include <defs.h>
 #include <mram.h>
 #include <alloc.h>
+#include <perfcounter.h>
 #include <barrier.h>
 
 // #define DEBUG
@@ -85,17 +86,17 @@
 //   }
   
 // }
-// void get(void * buf, uint32_t start, uint32_t size) {
-//     // Read the node from MRAM
-//     uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
-//     mram_read((__mram_ptr void*)(addr), buf, size);
-// }
+inline void get(void * buf, uint64_t start, uint64_t size) {
+    // Read the node from MRAM
+    uint64_t addr = DPU_MRAM_HEAP_POINTER + start;
+    mram_read((__mram_ptr void*)(addr), buf, size);
+}
 
-// void save(void * buf, uint32_t start, uint32_t size) {
-//     // Write the walker back to MRAM
-//     uint32_t addr = DPU_MRAM_HEAP_POINTER + start;
-//     mram_write(buf, (__mram_ptr void*)(addr), size);
-// }
+inline void save(void * buf, uint64_t start, uint64_t size) {
+    // Write the walker back to MRAM
+    uint64_t addr = DPU_MRAM_HEAP_POINTER + start;
+    mram_write(buf, (__mram_ptr void*)(addr), size);
+}
 
 
 // void run_thread(uint64_t walker_container_ptr, uint64_t trace_length, char * node_buffer, char * walker_buffer) {
@@ -118,32 +119,18 @@
 //     }
 // }
 BARRIER_INIT(my_barrier, NR_TASKLETS);
-
-// __host uint64_t my_dpu_id;
-uint64_t m_dpu_id = 0;
-
 int main() {
-  // Do some calculation proportional to the DPU id
-  uint64_t result = 0;
-  uint64_t rand[5] = {123456789, 362436069, 521288629, 88675123, 5783321};
+    uint64_t result = 0;
+    uint64_t dpu_id = -1;
+    if (me() == 0) {
+        mem_reset();
+    }
+    barrier_wait(&my_barrier);
+    get(&dpu_id, 0, sizeof(uint64_t));
 
-  if (me() == 0) {
-    // my_dpu_id = *((uint64_t*)__mram_ptr void const*)DPU_MRAM_HEAP_POINTER;
-    // #ifdef DEBUG
-    // printf("DPU Tasklet %u: DPU id from MRAM: %lu\n", me(), my_dpu_id);
-    mem_reset();
-    mram_read((__mram_ptr void const*)DPU_MRAM_HEAP_POINTER, &m_dpu_id, 8);
-    // #endif
-  }
-  // BARRIER_WAIT(&my_barrier);
-
-
-  for (uint64_t i = 0; i < rand[m_dpu_id % 5] % 10; i++) {
-    result += i;
-  }
-  // printf("DPU Tasklet %u: Finished processing for DPU id %lu, result: %lu\n", me(), dpu_id, result);
-  
-  // dpu_id = result;
-  mram_write(&result, (__mram_ptr void*)DPU_MRAM_HEAP_POINTER, sizeof(uint64_t));
-  return 0;
+    for (uint64_t i = 0; i < dpu_id; i++) {
+        result = result + dpu_id;
+    }
+    save(&result, 8, sizeof(uint64_t));
+    return 0;
 }

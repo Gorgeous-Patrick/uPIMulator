@@ -2,7 +2,7 @@ package host
 
 import (
 	"errors"
-	// "fmt"
+	"fmt"
 	"uPIMulator/src/abi/encoding"
 	"uPIMulator/src/simulator/channel"
 )
@@ -66,8 +66,8 @@ func (this *ChannelTransferReadJob) CompareByteStreams(
 
 		for j := int64(0); j < byte_stream_1.Size(); j++ {
 			if byte_stream_1.Get(int(j)) != byte_stream_2.Get(int(j)) {
-				// err := errors.New(fmt.Sprintf("bytes are different (%d != %d)", byte_stream_1.Get(int(j)), byte_stream_2.Get(int(j))))
-				// panic(err)
+				err := errors.New(fmt.Sprintf("bytes are different (%d != %d)", byte_stream_1.Get(int(j)), byte_stream_2.Get(int(j))))
+				panic(err)
 			}
 		}
 	}
