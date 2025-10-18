@@ -411,7 +411,6 @@ func (this *Logic) ExecuteInstruction(instruction_ *instruction.Instruction) {
 
 	if this.verbose >= 2 {
 		fmt.Println(this.PrintRegFile(thread))
-		fmt.Println("CARRY:", thread.RegFile().ReadFlagReg(instruction.CARRY))
 	}
 }
 
@@ -896,7 +895,6 @@ func (this *Logic) ExecuteSubRric(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteSUbRric")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -1119,7 +1117,6 @@ func (this *Logic) ExecuteSubRrici(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteSubRrici")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -1188,7 +1185,6 @@ func (this *Logic) ExecuteRrif(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteRrif")
 	} else if op_code == instruction.XOR {
 		result = this.alu.Xor(ra, imm)
 		carry = false
@@ -1328,13 +1324,11 @@ func (this *Logic) ExecuteRrr(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.RSUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(rb, ra, carry_flag)
-		fmt.Println("ExecuteRrr")
 	} else if op_code == instruction.SUB {
 		result, carry, _ = this.alu.Sub(ra, rb)
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(ra, rb, carry_flag)
-		fmt.Println("ExecuteRrr")
 	} else if op_code == instruction.XOR {
 		result = this.alu.Xor(ra, rb)
 		carry = false
@@ -1555,7 +1549,6 @@ func (this *Logic) ExecuteRsubRrrc(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.RSUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(rb, ra, carry_flag)
-		fmt.Println("ExecuteRsubRrrc")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -1599,7 +1592,6 @@ func (this *Logic) ExecuteSubRrrc(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, rb, carry_flag)
-		fmt.Println("ExecuteSubRrrc")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -1886,13 +1878,11 @@ func (this *Logic) ExecuteRsubRrrci(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.RSUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(rb, ra, carry_flag)
-		fmt.Println("ExecuteRsubRrrci")
 	} else if op_code == instruction.SUB {
 		result, carry, overflow = this.alu.Sub(ra, rb)
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, rb, carry_flag)
-		fmt.Println("ExecuteRsubRrrci")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -2222,7 +2212,6 @@ func (this *Logic) ExecuteSubZric(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteSubZric")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -2433,7 +2422,6 @@ func (this *Logic) ExecuteSubZrici(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteSubZrici")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -2500,7 +2488,6 @@ func (this *Logic) ExecuteZrif(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteZrif")
 	} else if op_code == instruction.XOR {
 		result = this.alu.Xor(ra, imm)
 		carry = false
@@ -2639,13 +2626,11 @@ func (this *Logic) ExecuteZrr(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.RSUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(rb, ra, carry_flag)
-		fmt.Println("ExecuteZrr")
 	} else if op_code == instruction.SUB {
 		result, carry, _ = this.alu.Sub(ra, rb)
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(ra, rb, carry_flag)
-		fmt.Println("ExecuteZrr")
 	} else if op_code == instruction.XOR {
 		result = this.alu.Xor(ra, rb)
 		carry = false
@@ -2852,7 +2837,6 @@ func (this *Logic) ExecuteRsubZrrc(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.RSUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(rb, ra, carry_flag)
-		fmt.Println("ExecuteRsubZrrc")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -2890,7 +2874,6 @@ func (this *Logic) ExecuteSubZrrc(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, rb, carry_flag)
-		fmt.Println("ExecuteSubZrrc")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -3162,16 +3145,12 @@ func (this *Logic) ExecuteRsubZrrci(instruction_ *instruction.Instruction) {
 		result, carry, overflow = this.alu.Sub(rb, ra)
 	} else if op_code == instruction.RSUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
-		fmt.Println("Carry: ", carry_flag)
 		result, carry, overflow = this.alu.Subc(rb, ra, carry_flag)
-		fmt.Println("ExecuteRsubZrrci")
 	} else if op_code == instruction.SUB {
 		result, carry, overflow = this.alu.Sub(ra, rb)
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
-		fmt.Println("Carry: ", carry_flag)
 		result, carry, overflow = this.alu.Subc(ra, rb, carry_flag)
-		fmt.Println("ExecuteRsubZrrci")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -3179,8 +3158,6 @@ func (this *Logic) ExecuteRsubZrrci(instruction_ *instruction.Instruction) {
 
 	thread.RegFile().ClearConditions()
 	this.SetSubNzCc(instruction_, ra, rb, result, carry, overflow)
-	fmt.Println("JUMP COND:", instruction_.Condition(), result)
-	fmt.Println("JUMPING: ", thread.RegFile().ReadConditionReg(instruction_.Condition()))
 
 	if thread.RegFile().ReadConditionReg(instruction_.Condition()) {
 		thread.RegFile().WritePcReg(instruction_.Pc().Value())
@@ -3574,7 +3551,6 @@ func (this *Logic) ExecuteSubSRrici(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteSubSRrici")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -3654,7 +3630,6 @@ func (this *Logic) ExecuteSRrif(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(ra, imm, carry_flag)
-		fmt.Println("ExecuteSRrif")
 	} else if op_code == instruction.XOR {
 		result = this.alu.Xor(ra, imm)
 		carry = false
@@ -4465,7 +4440,6 @@ func (this *Logic) ExecuteRir(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(imm, ra, carry_flag)
-		fmt.Println("ExecuteRir")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -4501,7 +4475,6 @@ func (this *Logic) ExecuteRirc(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(imm, ra, carry_flag)
-		fmt.Println("ExecuteRirc")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -4545,7 +4518,6 @@ func (this *Logic) ExecuteRirci(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(imm, ra, carry_flag)
-		fmt.Println("ExecuteRirci")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -4588,7 +4560,6 @@ func (this *Logic) ExecuteZir(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(imm, ra, carry_flag)
-		fmt.Println("ExecuteZir")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -4623,7 +4594,6 @@ func (this *Logic) ExecuteZirc(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, _ = this.alu.Subc(imm, ra, carry_flag)
-		fmt.Println("ExecuteZirc")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
@@ -4661,7 +4631,6 @@ func (this *Logic) ExecuteZirci(instruction_ *instruction.Instruction) {
 	} else if op_code == instruction.SUBC {
 		carry_flag := thread.RegFile().ReadFlagReg(instruction.CARRY)
 		result, carry, overflow = this.alu.Subc(imm, ra, carry_flag)
-		fmt.Println("ExecuteZirci")
 	} else {
 		err := errors.New("op code is not valid")
 		panic(err)
