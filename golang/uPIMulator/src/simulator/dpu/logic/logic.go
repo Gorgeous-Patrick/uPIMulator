@@ -5629,22 +5629,6 @@ func (this *Logic) SetSubNzCc(
 		thread.RegFile().SetCondition(cc.GEU)
 	}
 
-	// if word1.Value(word.UNSIGNED) < word2.Value(word.UNSIGNED) {
-	// 	thread.RegFile().SetCondition(cc.LTU)
-	// }
-	//
-	// if word1.Value(word.UNSIGNED) <= word2.Value(word.UNSIGNED) {
-	// 	thread.RegFile().SetCondition(cc.LEU)
-	// }
-	//
-	// if word1.Value(word.UNSIGNED) > word2.Value(word.UNSIGNED) {
-	// 	thread.RegFile().SetCondition(cc.GTU)
-	// }
-	//
-	// if word1.Value(word.UNSIGNED) >= word2.Value(word.UNSIGNED) {
-	// 	thread.RegFile().SetCondition(cc.GEU)
-	// }
-
 	if word1.Value(word.SIGNED) < word2.Value(word.SIGNED) {
 		thread.RegFile().SetCondition(cc.LTS)
 	}
