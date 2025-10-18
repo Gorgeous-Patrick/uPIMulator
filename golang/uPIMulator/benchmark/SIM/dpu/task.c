@@ -22,15 +22,13 @@ int main(void) {
     }
     // Barrier
     barrier_wait(&my_barrier);
-    uint64_t * result_ptr = mem_alloc(8);
-    uint64_t * task_num_ptr = mem_alloc(8);
-    *result_ptr = 0;
-    mram_read(DPU_MRAM_HEAP_POINTER, task_num_ptr, 8);
-    uint64_t task_num = *task_num_ptr;
+    uint64_t result = 0;
+    uint64_t task_num = -1;
+    mram_read(DPU_MRAM_HEAP_POINTER, &task_num, 8);
     for (uint64_t i = 0; i < task_num; i++) {
-        *result_ptr += task_num;
+        result += task_num;
     }
-    mram_write(result_ptr, DPU_MRAM_HEAP_POINTER + 64, 8);
+    mram_write(&result, DPU_MRAM_HEAP_POINTER + 64, 8);
 
     return 0;
 }
