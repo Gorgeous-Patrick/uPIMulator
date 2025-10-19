@@ -409,6 +409,11 @@ func (this *Logic) ExecuteInstruction(instruction_ *instruction.Instruction) {
 		panic(err)
 	}
 
+	// increment per-op counter in stat factory (e.g., inst_add, inst_ldma)
+	opName := instruction_.StringifyOpCode()
+	statName := fmt.Sprintf("inst_%s", opName)
+	this.stat_factory.Increment(statName, 1)
+
 	if this.verbose >= 2 {
 		fmt.Println(this.PrintRegFile(thread))
 	}
