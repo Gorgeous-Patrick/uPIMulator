@@ -4,6 +4,7 @@ project(benchmark)
 
 add_subdirectory(BS)
 add_subdirectory(GEMV)
+add_subdirectory(GEN)
 add_subdirectory(HST-L)
 add_subdirectory(HST-S)
 add_subdirectory(MLP)
